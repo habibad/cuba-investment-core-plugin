@@ -20,6 +20,10 @@ class TemplateLoader {
         add_action( 'init', [ __CLASS__, 'add_rewrite_rules' ] );
         add_filter( 'template_include', [ __CLASS__, 'route_templates' ], 90 );
         add_filter( 'pre_get_document_title', [ __CLASS__, 'filter_document_title' ], 15 );
+
+        // Suppress default WordPress Admin Bar on portal/dashboard routes & for non-admins
+        add_filter( 'show_admin_bar', [ __CLASS__, 'filter_show_admin_bar' ], 999 );
+        add_action( 'template_redirect', [ __CLASS__, 'disable_admin_bar_on_portal' ], 1 );
     }
 
     public static function register_query_vars( $vars ) {
@@ -28,6 +32,7 @@ class TemplateLoader {
     }
 
     public static function add_rewrite_rules() {
+        // Authentication routes
         add_rewrite_rule( '^join-network/?$', 'index.php?cin_auth_page=join-network', 'top' );
         add_rewrite_rule( '^register/investor/?$', 'index.php?cin_auth_page=register-investor', 'top' );
         add_rewrite_rule( '^register/business-owner/?$', 'index.php?cin_auth_page=register-business-owner', 'top' );
@@ -36,8 +41,22 @@ class TemplateLoader {
         add_rewrite_rule( '^verify-email/?$', 'index.php?cin_auth_page=verify-email', 'top' );
         add_rewrite_rule( '^forgot-password/?$', 'index.php?cin_auth_page=forgot-password', 'top' );
         add_rewrite_rule( '^reset-password/?$', 'index.php?cin_auth_page=reset-password', 'top' );
+
+        // Investor Dashboard & Profile routes
+        add_rewrite_rule( '^investor/dashboard/?$', 'index.php?cin_auth_page=dashboard-investor', 'top' );
+        add_rewrite_rule( '^investor/profile/?$', 'index.php?cin_auth_page=investor-profile', 'top' );
+        add_rewrite_rule( '^dashboard/investor/profile/?$', 'index.php?cin_auth_page=investor-profile', 'top' );
         add_rewrite_rule( '^dashboard/investor/?$', 'index.php?cin_auth_page=dashboard-investor', 'top' );
+
+        // Business Owner Dashboard & Profile routes
+        add_rewrite_rule( '^business-owner/dashboard/?$', 'index.php?cin_auth_page=dashboard-business', 'top' );
+        add_rewrite_rule( '^business-owner/profile/?$', 'index.php?cin_auth_page=business-owner-profile', 'top' );
+        add_rewrite_rule( '^business-owner/business-profile/?$', 'index.php?cin_auth_page=business-profile', 'top' );
+        add_rewrite_rule( '^dashboard/business/profile/?$', 'index.php?cin_auth_page=business-owner-profile', 'top' );
+        add_rewrite_rule( '^dashboard/business/business-profile/?$', 'index.php?cin_auth_page=business-profile', 'top' );
         add_rewrite_rule( '^dashboard/business/?$', 'index.php?cin_auth_page=dashboard-business', 'top' );
+
+        // Generic Dashboard & Account routes
         add_rewrite_rule( '^dashboard/?$', 'index.php?cin_auth_page=dashboard', 'top' );
         add_rewrite_rule( '^account/?$', 'index.php?cin_auth_page=account', 'top' );
     }
@@ -63,14 +82,22 @@ class TemplateLoader {
 
             $valid_routes = [
                 'join-network',
-                'register/investor'       => 'register-investor',
-                'register/business-owner' => 'register-business-owner',
+                'register/investor'                   => 'register-investor',
+                'register/business-owner'            => 'register-business-owner',
                 'login',
                 'verify-email',
                 'forgot-password',
                 'reset-password',
-                'dashboard/investor'      => 'dashboard-investor',
-                'dashboard/business'      => 'dashboard-business',
+                'investor/dashboard'                 => 'dashboard-investor',
+                'investor/profile'                   => 'investor-profile',
+                'dashboard/investor'                 => 'dashboard-investor',
+                'dashboard/investor/profile'         => 'investor-profile',
+                'business-owner/dashboard'            => 'dashboard-business',
+                'business-owner/profile'             => 'business-owner-profile',
+                'business-owner/business-profile'    => 'business-profile',
+                'dashboard/business'                 => 'dashboard-business',
+                'dashboard/business/profile'         => 'business-owner-profile',
+                'dashboard/business/business-profile'=> 'business-profile',
                 'dashboard',
                 'account',
             ];
@@ -103,7 +130,10 @@ class TemplateLoader {
             'forgot-password'         => 'auth/forgot-password.php',
             'reset-password'          => 'auth/reset-password.php',
             'dashboard-investor'      => 'dashboard/dashboard-investor.php',
+            'investor-profile'        => 'dashboard/investor-profile.php',
             'dashboard-business'      => 'dashboard/dashboard-business.php',
+            'business-owner-profile'  => 'dashboard/business-owner-profile.php',
+            'business-profile'        => 'dashboard/business-profile.php',
             'account'                 => 'dashboard/account.php',
         ];
 
@@ -158,7 +188,10 @@ class TemplateLoader {
             'forgot-password'         => __( 'Forgot Password — Cuba Investment Network', 'cuba-investment-core' ),
             'reset-password'          => __( 'Reset Password — Cuba Investment Network', 'cuba-investment-core' ),
             'dashboard-investor'      => __( 'Investor Portal — Cuba Investment Network', 'cuba-investment-core' ),
+            'investor-profile'        => __( 'Investor Profile — Cuba Investment Network', 'cuba-investment-core' ),
             'dashboard-business'      => __( 'Business Owner Portal — Cuba Investment Network', 'cuba-investment-core' ),
+            'business-owner-profile'  => __( 'Personal Profile — Cuba Investment Network', 'cuba-investment-core' ),
+            'business-profile'        => __( 'Business Profile — Cuba Investment Network', 'cuba-investment-core' ),
             'account'                 => __( 'Account Settings — Cuba Investment Network', 'cuba-investment-core' ),
         ];
 
@@ -168,4 +201,90 @@ class TemplateLoader {
 
         return $title;
     }
+
+    /**
+     * Check if current request matches any portal, dashboard, or auth route
+     *
+     * @return bool
+     */
+    public static function is_portal_or_auth_route() {
+        $route = get_query_var( 'cin_auth_page' );
+        if ( ! empty( $route ) ) {
+            return true;
+        }
+
+        $path = trim( parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH ), '/' );
+        $site_path = trim( parse_url( home_url(), PHP_URL_PATH ), '/' );
+        if ( ! empty( $site_path ) && 0 === strpos( $path, $site_path ) ) {
+            $path = trim( substr( $path, strlen( $site_path ) ), '/' );
+        }
+
+        $portal_prefixes = [
+            'investor',
+            'business-owner',
+            'dashboard',
+            'account',
+            'join-network',
+            'register',
+            'login',
+            'logout',
+            'verify-email',
+            'forgot-password',
+            'reset-password',
+        ];
+
+        foreach ( $portal_prefixes as $prefix ) {
+            if ( $path === $prefix || 0 === strpos( $path, $prefix . '/' ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Filter show_admin_bar to hide on portal/dashboard routes and for non-admins
+     *
+     * @param bool $show
+     * @return bool
+     */
+    public static function filter_show_admin_bar( $show ) {
+        if ( is_admin() ) {
+            return $show;
+        }
+
+        // Never show admin bar to non-administrators anywhere on the site
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return false;
+        }
+
+        // Never show admin bar on dashboard or portal pages for anyone (even Admin)
+        if ( self::is_portal_or_auth_route() ) {
+            return false;
+        }
+
+        return $show;
+    }
+
+    /**
+     * Disarm admin bar rendering and margin bump on portal routes
+     */
+    public static function disable_admin_bar_on_portal() {
+        if ( is_admin() ) {
+            return;
+        }
+
+        if ( ! current_user_can( 'manage_options' ) || self::is_portal_or_auth_route() ) {
+            show_admin_bar( false );
+            add_filter( 'show_admin_bar', '__return_false', 999 );
+            remove_action( 'wp_head', '_admin_bar_bump_cb' );
+            remove_action( 'wp_head', 'wp_admin_bar_header' );
+            remove_action( 'wp_body_open', 'wp_admin_bar_render', 0 );
+            remove_action( 'wp_footer', 'wp_admin_bar_render', 1000 );
+            add_filter( 'body_class', function( $classes ) {
+                return array_diff( $classes, [ 'admin-bar' ] );
+            }, 999 );
+        }
+    }
 }
+

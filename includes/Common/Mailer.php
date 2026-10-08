@@ -16,6 +16,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Mailer {
 
     /**
+     * Diagnostic error information from the most recent wp_mail attempt
+     *
+     * @var string|null
+     */
+    public static $last_error = null;
+
+    /**
+     * Diagnostic handoff status from the most recent wp_mail attempt
+     *
+     * @var bool|null
+     */
+    public static $last_dispatch_success = null;
+
+    /**
+     * Retrieve diagnostic error from last wp_mail call
+     *
+     * @return string|null
+     */
+    public static function get_last_error() {
+        return self::$last_error;
+    }
+
+    /**
+     * Check if the last wp_mail call reported success
+     *
+     * @return bool|null
+     */
+    public static function was_last_dispatch_successful() {
+        return self::$last_dispatch_success;
+    }
+
+    /**
      * Get official support contact link or email
      * Never invents email address; uses configured theme mod or site contact URL
      *
@@ -146,7 +178,7 @@ class Mailer {
     }
 
     /**
-     * Dispatch email with HTML headers
+     * Dispatch email with HTML headers, capturing safe diagnostics if wp_mail fails
      *
      * @param string $to
      * @param string $subject
@@ -154,12 +186,65 @@ class Mailer {
      * @return bool
      */
     protected static function send( $to, $subject, $html_content ) {
+        $clean_recipient = sanitize_email( $to );
+        if ( ! is_email( $clean_recipient ) ) {
+            Logger::warning( 'Email dispatch skipped: invalid recipient address', [
+                'recipient' => $to,
+            ] );
+            self::$last_error = __( 'Invalid recipient email address.', 'cuba-investment-core' );
+            self::$last_dispatch_success = false;
+            return false;
+        }
+
         $headers = [
             'Content-Type: text/html; charset=UTF-8',
-            sprintf( 'From: %s <%s>', get_bloginfo( 'name' ), get_option( 'admin_email' ) ),
         ];
 
-        return wp_mail( $to, $subject, $html_content, $headers );
+        $from_email = apply_filters( 'cuba_mail_from', get_option( 'admin_email' ) );
+        $from_name  = apply_filters( 'cuba_mail_from_name', get_bloginfo( 'name' ) );
+
+        if ( ! empty( $from_email ) && is_email( $from_email ) ) {
+            $clean_name = wp_strip_all_tags( $from_name );
+            $headers[]  = sprintf( 'From: %s <%s>', $clean_name, sanitize_email( $from_email ) );
+        }
+
+        // Capture transport errors via wp_mail_failed action without modifying WordPress core
+        $captured_error  = null;
+        $failed_callback = function( $wp_error ) use ( &$captured_error ) {
+            if ( $wp_error instanceof \WP_Error ) {
+                $captured_error = $wp_error;
+            }
+        };
+
+        add_action( 'wp_mail_failed', $failed_callback, 10, 1 );
+
+        $sent = wp_mail( $clean_recipient, $subject, $html_content, $headers );
+
+        remove_action( 'wp_mail_failed', $failed_callback, 10 );
+
+        self::$last_dispatch_success = (bool) $sent;
+
+        if ( ! $sent ) {
+            $diag_msg = ( $captured_error instanceof \WP_Error )
+                ? $captured_error->get_error_message()
+                : __( 'wp_mail() returned false without WP_Error (system mail transport unavailable).', 'cuba-investment-core' );
+
+            self::$last_error = $diag_msg;
+
+            Logger::warning( 'wp_mail failed to dispatch message', [
+                'recipient' => substr( $clean_recipient, 0, 3 ) . '***',
+                'subject'   => $subject,
+                'error'     => $diag_msg,
+            ] );
+        } else {
+            self::$last_error = null;
+            Logger::info( 'wp_mail successfully handed off message to transport', [
+                'recipient' => substr( $clean_recipient, 0, 3 ) . '***',
+                'subject'   => $subject,
+            ] );
+        }
+
+        return (bool) $sent;
     }
 
     /**

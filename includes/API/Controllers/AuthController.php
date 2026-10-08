@@ -43,6 +43,12 @@ class AuthController {
             'permission_callback' => '__return_true',
         ] );
 
+        register_rest_route( Constants::API_NAMESPACE, '/auth/verify-email', [
+            'methods'             => 'POST',
+            'callback'            => [ __CLASS__, 'verify_email' ],
+            'permission_callback' => '__return_true',
+        ] );
+
         register_rest_route( Constants::API_NAMESPACE, '/auth/forgot-password', [
             'methods'             => 'POST',
             'callback'            => [ __CLASS__, 'forgot_password' ],
@@ -106,6 +112,26 @@ class AuthController {
         $result = EmailVerification::resend( $email );
 
         return rest_ensure_response( $result );
+    }
+
+    public static function verify_email( \WP_REST_Request $request ) {
+        $params = $request->get_json_params() ?: $request->get_body_params();
+        $token  = isset( $params['token'] ) ? sanitize_text_field( $params['token'] ) : '';
+        $uid    = isset( $params['uid'] ) ? absint( $params['uid'] ) : 0;
+
+        $result = EmailVerification::verify( $uid, $token );
+
+        if ( is_wp_error( $result ) ) {
+            return $result;
+        }
+
+        return rest_ensure_response( [
+            'success'          => true,
+            'already_verified' => ( 'already_verified' === $result ),
+            'message'          => ( 'already_verified' === $result )
+                ? __( 'Account already verified.', 'cuba-investment-core' )
+                : __( 'Email verified successfully.', 'cuba-investment-core' ),
+        ] );
     }
 
     public static function forgot_password( \WP_REST_Request $request ) {

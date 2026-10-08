@@ -38,8 +38,11 @@ class RouteProtection {
         $route_alias_map = [
             'register-investor'       => 'register/investor',
             'register-business-owner' => 'register/business-owner',
-            'dashboard-investor'      => 'dashboard/investor',
-            'dashboard-business'      => 'dashboard/business',
+            'dashboard-investor'      => 'investor/dashboard',
+            'investor-profile'        => 'investor/profile',
+            'dashboard-business'      => 'business-owner/dashboard',
+            'business-owner-profile'  => 'business-owner/profile',
+            'business-profile'        => 'business-owner/business-profile',
         ];
         if ( isset( $route_alias_map[ $route ] ) ) {
             $route = $route_alias_map[ $route ];
@@ -47,6 +50,42 @@ class RouteProtection {
 
         $is_logged_in = is_user_logged_in();
         $user_id      = get_current_user_id();
+
+        // 0. Handle Email Verification Callback Route
+        if ( 'verify-email' === $route ) {
+            $token = '';
+            if ( ! empty( $_GET['token'] ) ) {
+                $token = sanitize_text_field( wp_unslash( $_GET['token'] ) );
+            } elseif ( ! empty( $_GET['amp;token'] ) ) {
+                $token = sanitize_text_field( wp_unslash( $_GET['amp;token'] ) );
+            } elseif ( ! empty( $_GET['#038;token'] ) ) {
+                $token = sanitize_text_field( wp_unslash( $_GET['#038;token'] ) );
+            }
+
+            $uid = 0;
+            if ( ! empty( $_GET['uid'] ) ) {
+                $uid = absint( $_GET['uid'] );
+            } elseif ( ! empty( $_GET['amp;uid'] ) ) {
+                $uid = absint( $_GET['amp;uid'] );
+            } elseif ( ! empty( $_GET['#038;uid'] ) ) {
+                $uid = absint( $_GET['#038;uid'] );
+            }
+
+            if ( ! empty( $token ) ) {
+                $result = EmailVerification::verify( $uid, $token );
+                EmailVerification::$last_result = $result;
+
+                if ( true === $result ) {
+                    wp_safe_redirect( add_query_arg( [ 'verified' => 'success' ], home_url( '/login/' ) ) );
+                    exit;
+                }
+
+                if ( 'already_verified' === $result ) {
+                    wp_safe_redirect( add_query_arg( [ 'verified' => 'already' ], home_url( '/login/' ) ) );
+                    exit;
+                }
+            }
+        }
 
         // 1. Handle Logout Route
         if ( 'logout' === $route ) {
@@ -74,7 +113,15 @@ class RouteProtection {
         $protected_routes = [
             'dashboard',
             'dashboard/investor',
+            'investor/dashboard',
+            'investor/profile',
+            'dashboard/investor/profile',
             'dashboard/business',
+            'business-owner/dashboard',
+            'business-owner/profile',
+            'dashboard/business/profile',
+            'business-owner/business-profile',
+            'dashboard/business/business-profile',
             'account',
         ];
 
@@ -99,9 +146,9 @@ class RouteProtection {
                 exit;
             }
 
-            // Role-based authorization for dashboards
-            $user  = get_userdata( $user_id );
-            $roles = (array) $user->roles;
+            // Role-based authorization for dashboards & profiles
+            $user     = get_userdata( $user_id );
+            $roles    = (array) $user->roles;
             $is_admin = in_array( 'administrator', $roles, true );
 
             // Route: Generic /dashboard/ -> dispatch to proper role dashboard
@@ -110,19 +157,33 @@ class RouteProtection {
                 exit;
             }
 
-            // Route: Investor Dashboard
-            if ( 'dashboard/investor' === $route ) {
+            // Investor Routes
+            $investor_routes = [
+                'dashboard/investor',
+                'investor/dashboard',
+                'investor/profile',
+                'dashboard/investor/profile',
+            ];
+            if ( in_array( $route, $investor_routes, true ) ) {
                 if ( ! in_array( Constants::ROLE_INVESTOR, $roles, true ) && ! $is_admin ) {
-                    // Wrong role! Redirect to their own dashboard
+                    // Unauthorized role! Redirect to their own dashboard
                     wp_safe_redirect( AuthManager::get_user_dashboard_url( $user ) );
                     exit;
                 }
             }
 
-            // Route: Business Owner Dashboard
-            if ( 'dashboard/business' === $route ) {
+            // Business Owner Routes
+            $business_routes = [
+                'dashboard/business',
+                'business-owner/dashboard',
+                'business-owner/profile',
+                'dashboard/business/profile',
+                'business-owner/business-profile',
+                'dashboard/business/business-profile',
+            ];
+            if ( in_array( $route, $business_routes, true ) ) {
                 if ( ! in_array( Constants::ROLE_BUSINESS_OWNER, $roles, true ) && ! $is_admin ) {
-                    // Wrong role! Redirect to their own dashboard
+                    // Unauthorized role! Redirect to their own dashboard
                     wp_safe_redirect( AuthManager::get_user_dashboard_url( $user ) );
                     exit;
                 }

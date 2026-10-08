@@ -391,11 +391,11 @@ class AuthManager {
         $roles = (array) $user->roles;
 
         if ( in_array( Constants::ROLE_INVESTOR, $roles, true ) ) {
-            return home_url( '/dashboard/investor/' );
+            return home_url( '/investor/dashboard/' );
         }
 
         if ( in_array( Constants::ROLE_BUSINESS_OWNER, $roles, true ) ) {
-            return home_url( '/dashboard/business/' );
+            return home_url( '/business-owner/dashboard/' );
         }
 
         if ( in_array( 'administrator', $roles, true ) ) {

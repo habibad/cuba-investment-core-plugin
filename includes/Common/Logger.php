@@ -130,7 +130,7 @@ class Logger {
             return;
         }
 
-        $user_id    = get_current_user_id();
+        $user_id    = ! empty( $context['user_id'] ) ? absint( $context['user_id'] ) : get_current_user_id();
         $ip_address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '0.0.0.0';
         $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
         $action     = isset( $context['action'] ) ? sanitize_text_field( $context['action'] ) : 'general';

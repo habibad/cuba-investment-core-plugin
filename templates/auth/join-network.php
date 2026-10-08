@@ -3,138 +3,333 @@
  * Template: Registration Entry / Objective Selection
  * Route: /join-network/
  *
+ * Styled to match the client-approved Opportunity Portal Modal design.
+ *
  * @package CubaInvestment\Core
  */
+
+use CubaInvestment\Core\Auth\FormHandler;
+use CubaInvestment\Core\Security\NonceManager;
+use CubaInvestment\Core\Security\Sanitizer;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
 get_header();
+
+$flash_error = FormHandler::get_flash_error();
+$provinces   = Sanitizer::get_provinces();
+
+$countries = [
+    'United States'  => 'United States',
+    'Spain'          => 'Spain',
+    'Canada'         => 'Canada',
+    'United Kingdom' => 'United Kingdom',
+    'Mexico'         => 'Mexico',
+    'Panama'         => 'Panama',
+    'Italy'          => 'Italy',
+    'France'         => 'France',
+    'Germany'        => 'Germany',
+    'Switzerland'    => 'Switzerland',
+    'Other'          => 'Other Country',
+];
 ?>
 
-<main id="primary" class="site-main py-16 sm:py-20 bg-slate-50 min-h-[75vh] flex items-center">
-    <div class="container mx-auto px-4 max-w-4xl">
-        <!-- Header -->
-        <div class="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-            <span class="badge badge-accent mb-3"><?php esc_html_e( 'Platform Registration', 'cuba-investment-core' ); ?></span>
-            <h1 class="text-3xl sm:text-4xl font-heading font-extrabold text-primary mb-4 tracking-tight">
-                <?php esc_html_e( 'Join Cuba Investment Network', 'cuba-investment-core' ); ?>
-            </h1>
-            <p class="text-slate-600 text-base sm:text-lg leading-relaxed">
-                <?php esc_html_e( 'Connect with Cuba-focused businesses, investors, and strategic partners through our network.', 'cuba-investment-core' ); ?>
-            </p>
-            <div class="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-accent/10 text-accent rounded-full text-xs font-semibold">
-                <span>✦</span> <?php esc_html_e( 'Early Access — Free During Our Launch Period', 'cuba-investment-core' ); ?>
+<div class="site-auth-page min-h-[85vh] py-10 sm:py-16 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+    <div class="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-10 transition-all duration-300">
+
+        <!-- Modal Header with Tab Switcher -->
+        <div class="px-6 pt-6 pb-2 border-b border-slate-100 bg-white">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="inline-block">
+                    <img 
+                        src="<?php echo esc_url( get_template_directory_uri() . '/assets/images/logo.png' ); ?>" 
+                        alt="<?php echo esc_attr( get_bloginfo( 'name', 'display' ) ); ?>" 
+                        class="h-9 w-auto object-contain"
+                    />
+                </a>
+                <span class="text-[10px] uppercase font-bold tracking-wider text-primary bg-primary-50 px-2.5 py-1 rounded-md">
+                    <?php esc_html_e( 'Opportunity Portal', 'cuba-investment-core' ); ?>
+                </span>
             </div>
-        </div>
 
-        <!-- Two Selection Cards -->
-        <div class="grid md:grid-cols-2 gap-8 items-stretch">
-            
-            <!-- Option A: Join as an Investor -->
-            <div class="card p-8 sm:p-10 bg-white border border-slate-200/90 rounded-2xl shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-200 flex flex-col justify-between group">
-                <div>
-                    <div class="w-14 h-14 rounded-2xl bg-primary-50 text-primary flex items-center justify-center mb-6 group-hover:scale-105 transition-transform duration-200">
-                        <svg class="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-
-                    <span class="text-xs font-bold uppercase tracking-wider text-primary block mb-2">
-                        <?php esc_html_e( 'For Capital & Strategic Partners', 'cuba-investment-core' ); ?>
-                    </span>
-
-                    <h2 class="text-2xl font-heading font-extrabold text-primary mb-3">
-                        <?php esc_html_e( 'Option A — Join as an Investor', 'cuba-investment-core' ); ?>
-                    </h2>
-
-                    <p class="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
-                        <?php esc_html_e( 'Create an investor account to explore Cuba-focused business opportunities and connect with Business Owners.', 'cuba-investment-core' ); ?>
-                    </p>
-
-                    <!-- Highlights List -->
-                    <ul class="space-y-2.5 text-xs sm:text-sm text-slate-600 mb-8">
-                        <li class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-accent shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                            <span><?php esc_html_e( 'Explore reviewed Cuban business opportunities', 'cuba-investment-core' ); ?></span>
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-accent shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                            <span><?php esc_html_e( 'Request direct introductions to founders', 'cuba-investment-core' ); ?></span>
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-accent shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                            <span><?php esc_html_e( 'Zero membership or platform connection fees', 'cuba-investment-core' ); ?></span>
-                        </li>
-                    </ul>
-                </div>
-
+            <!-- Tab Buttons -->
+            <div id="modal-tab-nav" class="flex border-b border-slate-200">
                 <a 
-                    href="<?php echo esc_url( home_url( '/register/investor/' ) ); ?>" 
-                    class="btn btn-primary w-full btn-lg font-bold shadow-md hover:shadow-lg transition-all text-center justify-center"
+                    href="<?php echo esc_url( home_url( '/join-network/' ) ); ?>" 
+                    class="flex-1 py-3 text-sm font-semibold border-b-2 border-primary text-primary transition-colors text-center"
                 >
-                    <?php esc_html_e( 'Join as an Investor →', 'cuba-investment-core' ); ?>
+                    <?php esc_html_e( 'Create Account', 'cuba-investment-core' ); ?>
+                </a>
+                <a 
+                    href="<?php echo esc_url( home_url( '/login/' ) ); ?>" 
+                    class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors text-center"
+                >
+                    <?php esc_html_e( 'Log In', 'cuba-investment-core' ); ?>
                 </a>
             </div>
+        </div>
 
-            <!-- Option B: Join as a Business Owner -->
-            <div class="card p-8 sm:p-10 bg-white border border-slate-200/90 rounded-2xl shadow-sm hover:shadow-md hover:border-accent/40 transition-all duration-200 flex flex-col justify-between group">
-                <div>
-                    <div class="w-14 h-14 rounded-2xl bg-accent-50 text-accent flex items-center justify-center mb-6 group-hover:scale-105 transition-transform duration-200">
-                        <svg class="w-7 h-7 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                    </div>
+        <div class="p-6">
 
-                    <span class="text-xs font-bold uppercase tracking-wider text-accent block mb-2">
-                        <?php esc_html_e( 'For Cuban Enterprises & MIPYMEs', 'cuba-investment-core' ); ?>
-                    </span>
+            <!-- Error Alert Box -->
+            <?php if ( ! empty( $flash_error ) ) : ?>
+                <div class="mb-4 p-3.5 bg-red-50 border border-red-200 text-red-800 rounded-xl text-xs flex items-start gap-2.5" role="alert" aria-live="assertive">
+                    <span class="font-bold text-red-600 mt-0.5">⚠️</span>
+                    <div class="leading-relaxed"><?php echo esc_html( $flash_error ); ?></div>
+                </div>
+            <?php endif; ?>
 
-                    <h2 class="text-2xl font-heading font-extrabold text-primary mb-3">
-                        <?php esc_html_e( 'Option B — Join as a Business Owner', 'cuba-investment-core' ); ?>
-                    </h2>
+            <!-- Registration Form (Matching Modal structure with reactive role toggle) -->
+            <form id="join-form-register" method="POST" action="<?php echo esc_url( home_url( '/register/investor/' ) ); ?>" class="space-y-4" novalidate>
+                <div id="nonce-container-investor">
+                    <?php NonceManager::field( 'cin_register_investor', '_cin_nonce' ); ?>
+                </div>
+                <input type="hidden" id="join-cin-action" name="cin_action" value="cin_register_investor" />
 
-                    <p class="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
-                        <?php esc_html_e( 'Create a Business Owner account to present your business, describe your capital requirements, and connect with potential investors.', 'cuba-investment-core' ); ?>
-                    </p>
-
-                    <!-- Highlights List -->
-                    <ul class="space-y-2.5 text-xs sm:text-sm text-slate-600 mb-8">
-                        <li class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-accent shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                            <span><?php esc_html_e( 'Present your business profile and capital needs', 'cuba-investment-core' ); ?></span>
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-accent shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                            <span><?php esc_html_e( 'Direct communication with qualified investors', 'cuba-investment-core' ); ?></span>
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-accent shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                            <span><?php esc_html_e( 'Free listing during the platform launch period', 'cuba-investment-core' ); ?></span>
-                        </li>
-                    </ul>
+                <!-- Honeypot Bot Trap -->
+                <div style="display:none !important;" aria-hidden="true">
+                    <label for="website_hp">Leave this field blank</label>
+                    <input type="text" id="website_hp" name="website_hp" tabindex="-1" autocomplete="off" />
                 </div>
 
-                <a 
-                    href="<?php echo esc_url( home_url( '/register/business-owner/' ) ); ?>" 
-                    class="btn btn-accent w-full btn-lg font-bold shadow-md hover:shadow-lg transition-all text-center justify-center"
+                <!-- Role Selector (Investor vs Business Owner) -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                        <?php esc_html_e( 'Select Your Objective', 'cuba-investment-core' ); ?>
+                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label id="join-label-investor" class="flex items-center justify-center gap-2 p-3 border-2 border-primary bg-primary-50/50 rounded-xl cursor-pointer text-primary font-semibold text-xs sm:text-sm transition-all shadow-xs text-center">
+                            <input type="radio" name="account_role" id="join-role-investor" value="investor" checked class="text-primary focus:ring-primary" onchange="switchJoinRole('investor')">
+                            <span><?php esc_html_e( 'Join as an Investor', 'cuba-investment-core' ); ?></span>
+                        </label>
+                        <label id="join-label-business" class="flex items-center justify-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer text-slate-600 font-semibold text-xs sm:text-sm transition-all hover:border-slate-300 text-center">
+                            <input type="radio" name="account_role" id="join-role-business" value="business" class="text-primary focus:ring-primary" onchange="switchJoinRole('business')">
+                            <span><?php esc_html_e( 'Join as Business Owner', 'cuba-investment-core' ); ?></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Name Inputs -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="reg-first-name" class="block text-xs font-medium text-slate-700 mb-1">
+                            <?php esc_html_e( 'First Name *', 'cuba-investment-core' ); ?>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="reg-first-name" 
+                            name="first_name" 
+                            required 
+                            autocomplete="given-name" 
+                            placeholder="Elena" 
+                            class="form-input text-xs sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label for="reg-last-name" class="block text-xs font-medium text-slate-700 mb-1">
+                            <?php esc_html_e( 'Last Name *', 'cuba-investment-core' ); ?>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="reg-last-name" 
+                            name="last_name" 
+                            required 
+                            autocomplete="family-name" 
+                            placeholder="Vance" 
+                            class="form-input text-xs sm:text-sm"
+                        />
+                    </div>
+                </div>
+
+                <!-- Email Input -->
+                <div>
+                    <label for="reg-email" class="block text-xs font-medium text-slate-700 mb-1">
+                        <?php esc_html_e( 'Email Address *', 'cuba-investment-core' ); ?>
+                    </label>
+                    <input 
+                        type="email" 
+                        id="reg-email" 
+                        name="email" 
+                        required 
+                        autocomplete="email" 
+                        placeholder="your.name@example.com" 
+                        class="form-input text-xs sm:text-sm"
+                    />
+                </div>
+
+                <!-- Password Inputs -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label for="reg-password" class="block text-xs font-medium text-slate-700 mb-1">
+                            <?php esc_html_e( 'Password (min. 8 chars) *', 'cuba-investment-core' ); ?>
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="password" 
+                                id="reg-password" 
+                                name="password" 
+                                required 
+                                minlength="8" 
+                                autocomplete="new-password" 
+                                placeholder="••••••••" 
+                                class="form-input text-xs sm:text-sm pr-9"
+                            />
+                            <button 
+                                type="button" 
+                                class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer" 
+                                onclick="const p=document.getElementById('reg-password'); p.type = p.type==='password'?'text':'password';"
+                                aria-label="<?php esc_attr_e( 'Toggle password visibility', 'cuba-investment-core' ); ?>"
+                            >
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="reg-password-confirm" class="block text-xs font-medium text-slate-700 mb-1">
+                            <?php esc_html_e( 'Confirm Password *', 'cuba-investment-core' ); ?>
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="password" 
+                                id="reg-password-confirm" 
+                                name="password_confirm" 
+                                required 
+                                minlength="8" 
+                                autocomplete="new-password" 
+                                placeholder="••••••••" 
+                                class="form-input text-xs sm:text-sm pr-9"
+                            />
+                            <button 
+                                type="button" 
+                                class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer" 
+                                onclick="const p=document.getElementById('reg-password-confirm'); p.type = p.type==='password'?'text':'password';"
+                                aria-label="<?php esc_attr_e( 'Toggle confirm password visibility', 'cuba-investment-core' ); ?>"
+                            >
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Investor-Specific Fields -->
+                <div id="join-investor-fields" class="space-y-3">
+                    <div>
+                        <label for="reg-country" class="block text-xs font-medium text-slate-700 mb-1">
+                            <?php esc_html_e( 'Country of Residence *', 'cuba-investment-core' ); ?>
+                        </label>
+                        <select id="reg-country" name="country" class="form-input text-xs sm:text-sm">
+                            <option value=""><?php esc_html_e( '— Select Your Country —', 'cuba-investment-core' ); ?></option>
+                            <?php foreach ( $countries as $c_val => $c_label ) : ?>
+                                <option value="<?php echo esc_attr( $c_val ); ?>"><?php echo esc_html( $c_label ); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600">
+                        <div class="flex items-start gap-2">
+                            <input type="checkbox" id="investor-cert" name="accreditation_clause" checked class="mt-0.5 rounded text-accent focus:ring-accent">
+                            <label for="investor-cert" class="cursor-pointer text-[11px] leading-relaxed text-slate-600">
+                                <?php esc_html_e( 'I confirm that I am exploring private business opportunities in accordance with applicable laws in my jurisdiction.', 'cuba-investment-core' ); ?>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Business-Specific Fields -->
+                <div id="join-business-fields" class="space-y-3 hidden">
+                    <div>
+                        <label for="reg-business-name" class="block text-xs font-medium text-slate-700 mb-1">
+                            <?php esc_html_e( 'Business / Enterprise Name *', 'cuba-investment-core' ); ?>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="reg-business-name" 
+                            name="business_name" 
+                            placeholder="e.g. Caribe Logistics S.R.L." 
+                            class="form-input text-xs sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label for="reg-business-location" class="block text-xs font-medium text-slate-700 mb-1">
+                            <?php esc_html_e( 'Business Location / Province *', 'cuba-investment-core' ); ?>
+                        </label>
+                        <select id="reg-business-location" name="business_location" class="form-input text-xs sm:text-sm">
+                            <option value=""><?php esc_html_e( '— Select Cuban Province —', 'cuba-investment-core' ); ?></option>
+                            <?php foreach ( $provinces as $p_val => $p_name ) : ?>
+                                <option value="<?php echo esc_attr( $p_val ); ?>"><?php echo esc_html( $p_name ); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Legal Consent (Matching Modal) -->
+                <div class="space-y-2 pt-1 text-xs text-slate-600">
+                    <div class="flex items-start gap-2">
+                        <input type="checkbox" id="terms-agree" name="terms_agree" value="1" required class="mt-0.5 rounded text-primary focus:ring-primary">
+                        <label for="terms-agree" class="cursor-pointer text-[11px] leading-relaxed text-slate-600">
+                            <?php printf( 
+                                esc_html__( 'I agree to the %sTerms of Service%s and %sPrivacy Policy%s.', 'cuba-investment-core' ),
+                                '<a href="' . esc_url( home_url( '/terms-of-service/' ) ) . '" target="_blank" class="text-primary font-bold hover:underline">', '</a>',
+                                '<a href="' . esc_url( home_url( '/privacy-policy/' ) ) . '" target="_blank" class="text-primary font-bold hover:underline">', '</a>'
+                            ); ?>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button 
+                    type="submit" 
+                    class="btn btn-primary w-full btn-lg mt-2 font-bold shadow-md cursor-pointer flex items-center justify-center gap-2"
                 >
-                    <?php esc_html_e( 'Join as a Business Owner →', 'cuba-investment-core' ); ?>
-                </a>
-            </div>
+                    <span><?php esc_html_e( 'Create Free Account', 'cuba-investment-core' ); ?></span>
+                </button>
+
+                <!-- Switch to Login -->
+                <p class="text-xs text-center text-slate-500 pt-1">
+                    <?php esc_html_e( 'Already registered?', 'cuba-investment-core' ); ?> 
+                    <a href="<?php echo esc_url( home_url( '/login/' ) ); ?>" class="text-primary font-bold hover:underline cursor-pointer ml-1">
+                        <?php esc_html_e( 'Log In', 'cuba-investment-core' ); ?> &rarr;
+                    </a>
+                </p>
+            </form>
 
         </div>
 
-        <!-- Already registered footer -->
-        <div class="mt-12 text-center text-sm text-slate-500">
-            <?php esc_html_e( 'Already registered with Cuba Investment Network?', 'cuba-investment-core' ); ?>
-            <a href="<?php echo esc_url( home_url( '/login/' ) ); ?>" class="text-primary font-bold hover:underline ml-1">
-                <?php esc_html_e( 'Log In to Portal &rarr;', 'cuba-investment-core' ); ?>
-            </a>
-        </div>
     </div>
-</main>
+</div>
+
+<script>
+function switchJoinRole(role) {
+    const form = document.getElementById('join-form-register');
+    const invLabel = document.getElementById('join-label-investor');
+    const bizLabel = document.getElementById('join-label-business');
+    const invFields = document.getElementById('join-investor-fields');
+    const bizFields = document.getElementById('join-business-fields');
+    const actionInput = document.getElementById('join-cin-action');
+
+    if (role === 'investor') {
+        form.action = '<?php echo esc_url( home_url( '/register/investor/' ) ); ?>';
+        actionInput.value = 'cin_register_investor';
+
+        invLabel.className = 'flex items-center justify-center gap-2 p-3 border-2 border-primary bg-primary-50/50 rounded-xl cursor-pointer text-primary font-semibold text-xs sm:text-sm transition-all shadow-xs text-center';
+        bizLabel.className = 'flex items-center justify-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer text-slate-600 font-semibold text-xs sm:text-sm transition-all hover:border-slate-300 text-center';
+
+        invFields.classList.remove('hidden');
+        bizFields.classList.add('hidden');
+    } else {
+        form.action = '<?php echo esc_url( home_url( '/register/business-owner/' ) ); ?>';
+        actionInput.value = 'cin_register_business_owner';
+
+        bizLabel.className = 'flex items-center justify-center gap-2 p-3 border-2 border-primary bg-primary-50/50 rounded-xl cursor-pointer text-primary font-semibold text-xs sm:text-sm transition-all shadow-xs text-center';
+        invLabel.className = 'flex items-center justify-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer text-slate-600 font-semibold text-xs sm:text-sm transition-all hover:border-slate-300 text-center';
+
+        bizFields.classList.remove('hidden');
+        invFields.classList.add('hidden');
+    }
+}
+</script>
 
 <?php
 get_footer();
