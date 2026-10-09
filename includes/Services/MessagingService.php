@@ -82,6 +82,14 @@ class MessagingService {
             return new \WP_Error( 'empty_message', __( 'Message body cannot be empty.', 'cuba-investment-core' ), [ 'status' => 400 ] );
         }
 
+        // Verify sender and recipient accounts are active
+        if ( ! Permissions::is_account_active( $sender_id ) ) {
+            return new \WP_Error( 'account_inactive', __( 'Your account is suspended or inactive.', 'cuba-investment-core' ), [ 'status' => 403 ] );
+        }
+        if ( ! Permissions::is_account_active( $recipient_id ) ) {
+            return new \WP_Error( 'recipient_inactive', __( 'The recipient account is suspended or inactive.', 'cuba-investment-core' ), [ 'status' => 403 ] );
+        }
+
         // Verify connection exists and is active
         if ( ! Permissions::are_connected( $sender_id, $recipient_id ) ) {
             return new \WP_Error( 'not_connected', __( 'You can only message active connections.', 'cuba-investment-core' ), [ 'status' => 403 ] );
@@ -89,6 +97,19 @@ class MessagingService {
 
         $t_messages = Constants::get_table_name( Constants::TABLE_MESSAGES );
         $t_convos   = Constants::get_table_name( Constants::TABLE_CONVERSATIONS );
+
+        // Verify conversation exists and sender/recipient belong to it
+        $convo = $wpdb->get_row(
+            $wpdb->prepare( "SELECT * FROM {$t_convos} WHERE id = %d", (int) $conversation_id )
+        );
+        if ( ! $convo ) {
+            return new \WP_Error( 'not_found', __( 'Conversation not found.', 'cuba-investment-core' ), [ 'status' => 404 ] );
+        }
+        $is_p1 = ( (int) $convo->participant_one_id === (int) $sender_id && (int) $convo->participant_two_id === (int) $recipient_id );
+        $is_p2 = ( (int) $convo->participant_two_id === (int) $sender_id && (int) $convo->participant_one_id === (int) $recipient_id );
+        if ( ! $is_p1 && ! $is_p2 ) {
+            return new \WP_Error( 'forbidden', __( 'You are not an authorized participant in this conversation.', 'cuba-investment-core' ), [ 'status' => 403 ] );
+        }
 
         $now = current_time( 'mysql' );
 
@@ -193,4 +214,29 @@ class MessagingService {
 
         return false !== $updated;
     }
+
+    /**
+     * Get total unread messages count for a user across all conversations
+     *
+     * @param int $user_id
+     * @return int
+     */
+    public static function get_unread_count( $user_id ) {
+        global $wpdb;
+
+        $user_id = absint( $user_id );
+        if ( ! $user_id ) {
+            return 0;
+        }
+
+        $table = Constants::get_table_name( Constants::TABLE_MESSAGES );
+
+        return (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$table} WHERE recipient_user_id = %d AND is_read = 0",
+                $user_id
+            )
+        );
+    }
 }
+

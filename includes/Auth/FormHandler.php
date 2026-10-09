@@ -11,8 +11,10 @@
 namespace CubaInvestment\Core\Auth;
 
 use CubaInvestment\Core\Common\Constants;
+use CubaInvestment\Core\Common\Logger;
 use CubaInvestment\Core\Security\NonceManager;
 use CubaInvestment\Core\Services\ProfileService;
+use CubaInvestment\Core\Services\OpportunityService;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -22,6 +24,7 @@ class FormHandler {
 
     public static function init() {
         add_action( 'init', [ __CLASS__, 'process_form_submission' ] );
+        add_action( 'init', [ __CLASS__, 'handle_download_request' ] );
     }
 
     /**
@@ -34,6 +37,14 @@ class FormHandler {
 
         if ( ! isset( $_POST['cin_action'] ) ) {
             return;
+        }
+
+        if ( is_user_logged_in() ) {
+            $user_status = get_user_meta( get_current_user_id(), '_cin_account_status', true );
+            if ( 'suspended' === $user_status || 'disabled' === $user_status ) {
+                wp_logout();
+                wp_die( esc_html__( 'Your account access has been suspended. Please contact platform support.', 'cuba-investment-core' ), 403 );
+            }
         }
 
         $action = sanitize_key( $_POST['cin_action'] );
@@ -80,8 +91,32 @@ class FormHandler {
                 self::handle_update_business_profile();
                 break;
 
+            case 'cin_update_personal_settings':
+                self::handle_update_personal_settings();
+                break;
+
             case 'cin_update_password':
                 self::handle_update_password();
+                break;
+
+            case 'cin_save_opportunity_draft':
+                self::handle_save_opportunity_draft();
+                break;
+
+            case 'cin_submit_opportunity':
+                self::handle_submit_opportunity();
+                break;
+
+            case 'cin_delete_opportunity_draft':
+                self::handle_delete_opportunity_draft();
+                break;
+
+            case 'cin_upload_opportunity_document':
+                self::handle_upload_opportunity_document();
+                break;
+
+            case 'cin_delete_opportunity_document':
+                self::handle_delete_opportunity_document();
                 break;
         }
     }
@@ -271,6 +306,52 @@ class FormHandler {
     }
 
     /**
+     * Handle Personal Settings update POST from account page
+     */
+    protected static function handle_update_personal_settings() {
+        if ( ! is_user_logged_in() ) {
+            wp_die( esc_html__( 'Unauthorized request.', 'cuba-investment-core' ), 401 );
+        }
+
+        $user_id = get_current_user_id();
+
+        $first_name = isset( $_POST['first_name'] ) ? sanitize_text_field( wp_unslash( $_POST['first_name'] ) ) : '';
+        $last_name  = isset( $_POST['last_name'] ) ? sanitize_text_field( wp_unslash( $_POST['last_name'] ) ) : '';
+
+        if ( empty( $first_name ) || empty( $last_name ) ) {
+            set_transient( 'cin_profile_error_' . $user_id, __( 'First name and last name are required.', 'cuba-investment-core' ), 60 );
+            wp_safe_redirect( home_url( '/account/#personal-settings' ) );
+            exit;
+        }
+
+        // Update WordPress user core fields
+        $display_name = trim( $first_name . ' ' . $last_name );
+        wp_update_user( [
+            'ID'           => $user_id,
+            'first_name'   => $first_name,
+            'last_name'    => $last_name,
+            'display_name' => $display_name,
+        ] );
+
+        // Update personal preferences
+        $notify_inquiries     = ! empty( $_POST['notify_inquiries'] ) ? 1 : 0;
+        $notify_announcements = ! empty( $_POST['notify_announcements'] ) ? 1 : 0;
+        $pref_language        = isset( $_POST['preferred_language'] ) ? sanitize_key( $_POST['preferred_language'] ) : 'en';
+
+        update_user_meta( $user_id, '_cin_notify_inquiries', $notify_inquiries );
+        update_user_meta( $user_id, '_cin_notify_announcements', $notify_announcements );
+        update_user_meta( $user_id, '_cin_preferred_language', $pref_language );
+
+        Logger::audit( 'personal_settings_updated', 'User updated personal account settings', [
+            'user_id' => $user_id,
+        ] );
+
+        set_transient( 'cin_profile_success_' . $user_id, __( 'Personal settings updated successfully.', 'cuba-investment-core' ), 60 );
+        wp_safe_redirect( add_query_arg( 'personal_updated', '1', home_url( '/account/#personal-settings' ) ) );
+        exit;
+    }
+
+    /**
      * Handle Password change POST from account settings
      */
     protected static function handle_update_password() {
@@ -305,8 +386,169 @@ class FormHandler {
         wp_set_password( $new_pw, $user_id );
         wp_set_auth_cookie( $user_id, true );
 
+        Logger::audit( 'password_changed', 'Password changed via account settings', [
+            'user_id' => $user_id,
+        ] );
+
         set_transient( 'cin_profile_success_' . $user_id, __( 'Your password has been changed successfully.', 'cuba-investment-core' ), 60 );
         wp_safe_redirect( add_query_arg( 'pw_updated', '1', home_url( '/account/#security' ) ) );
+        exit;
+    }
+
+    /**
+     * Handle saving or auto-saving opportunity draft via POST
+     */
+    protected static function handle_save_opportunity_draft() {
+        if ( ! is_user_logged_in() ) {
+            wp_die( esc_html__( 'Unauthorized request.', 'cuba-investment-core' ), 401 );
+        }
+
+        $user_id = get_current_user_id();
+        $opp_id  = isset( $_POST['opportunity_id'] ) ? absint( $_POST['opportunity_id'] ) : ( isset( $_POST['id'] ) ? absint( $_POST['id'] ) : 0 );
+
+        $post_id = OpportunityService::save_draft( $user_id, wp_unslash( $_POST ), $opp_id );
+
+        if ( is_wp_error( $post_id ) ) {
+            set_transient( 'cin_profile_error_' . $user_id, $post_id->get_error_message(), 60 );
+            $redirect_url = $opp_id ? add_query_arg( 'id', $opp_id, home_url( '/business-owner/opportunities/create/' ) ) : home_url( '/business-owner/opportunities/create/' );
+            wp_safe_redirect( $redirect_url );
+            exit;
+        }
+
+        set_transient( 'cin_profile_success_' . $user_id, __( 'Draft opportunity saved successfully.', 'cuba-investment-core' ), 60 );
+        wp_safe_redirect( add_query_arg( [ 'id' => $post_id, 'saved' => '1' ], home_url( '/business-owner/opportunities/create/' ) ) );
+        exit;
+    }
+
+    /**
+     * Handle opportunity submission for admin review
+     */
+    protected static function handle_submit_opportunity() {
+        if ( ! is_user_logged_in() ) {
+            wp_die( esc_html__( 'Unauthorized request.', 'cuba-investment-core' ), 401 );
+        }
+
+        $user_id = get_current_user_id();
+        $opp_id  = isset( $_POST['opportunity_id'] ) ? absint( $_POST['opportunity_id'] ) : ( isset( $_POST['id'] ) ? absint( $_POST['id'] ) : 0 );
+
+        if ( ! $opp_id ) {
+            set_transient( 'cin_profile_error_' . $user_id, __( 'Please save the draft before submitting for review.', 'cuba-investment-core' ), 60 );
+            wp_safe_redirect( home_url( '/business-owner/opportunities/create/' ) );
+            exit;
+        }
+
+        $res = OpportunityService::submit_for_review( $user_id, $opp_id, wp_unslash( $_POST ) );
+
+        if ( is_wp_error( $res ) ) {
+            set_transient( 'cin_profile_error_' . $user_id, $res->get_error_message(), 60 );
+            wp_safe_redirect( add_query_arg( 'id', $opp_id, home_url( '/business-owner/opportunities/create/' ) ) );
+            exit;
+        }
+
+        set_transient( 'cin_profile_success_' . $user_id, __( 'Opportunity Submitted Successfully. Your opportunity has been submitted for review. You can monitor its status from My Opportunities.', 'cuba-investment-core' ), 60 );
+        wp_safe_redirect( add_query_arg( 'submitted', '1', home_url( '/business-owner/opportunities/' ) ) );
+        exit;
+    }
+
+    /**
+     * Handle deleting a draft opportunity
+     */
+    protected static function handle_delete_opportunity_draft() {
+        if ( ! is_user_logged_in() ) {
+            wp_die( esc_html__( 'Unauthorized request.', 'cuba-investment-core' ), 401 );
+        }
+
+        $user_id = get_current_user_id();
+        $opp_id  = isset( $_POST['opportunity_id'] ) ? absint( $_POST['opportunity_id'] ) : 0;
+
+        $res = OpportunityService::delete_draft( $user_id, $opp_id );
+
+        if ( is_wp_error( $res ) ) {
+            set_transient( 'cin_profile_error_' . $user_id, $res->get_error_message(), 60 );
+            wp_safe_redirect( home_url( '/business-owner/opportunities/' ) );
+            exit;
+        }
+
+        set_transient( 'cin_profile_success_' . $user_id, __( 'Draft opportunity removed.', 'cuba-investment-core' ), 60 );
+        wp_safe_redirect( add_query_arg( 'deleted', '1', home_url( '/business-owner/opportunities/' ) ) );
+        exit;
+    }
+
+    /**
+     * Handle document upload via form POST
+     */
+    protected static function handle_upload_opportunity_document() {
+        if ( ! is_user_logged_in() ) {
+            wp_die( esc_html__( 'Unauthorized request.', 'cuba-investment-core' ), 401 );
+        }
+
+        $user_id = get_current_user_id();
+        $opp_id  = isset( $_POST['opportunity_id'] ) ? absint( $_POST['opportunity_id'] ) : 0;
+        $file    = $_FILES['document'] ?? null;
+
+        if ( ! $file ) {
+            set_transient( 'cin_profile_error_' . $user_id, __( 'No document file selected.', 'cuba-investment-core' ), 60 );
+            wp_safe_redirect( add_query_arg( 'id', $opp_id, home_url( '/business-owner/opportunities/create/' ) ) );
+            exit;
+        }
+
+        $res = OpportunityService::upload_document( $user_id, $opp_id, $file );
+
+        if ( is_wp_error( $res ) ) {
+            set_transient( 'cin_profile_error_' . $user_id, $res->get_error_message(), 60 );
+        } else {
+            set_transient( 'cin_profile_success_' . $user_id, __( 'Document uploaded securely.', 'cuba-investment-core' ), 60 );
+        }
+
+        wp_safe_redirect( add_query_arg( [ 'id' => $opp_id, 'step' => '6' ], home_url( '/business-owner/opportunities/create/' ) ) );
+        exit;
+    }
+
+    /**
+     * Handle document deletion via form POST
+     */
+    protected static function handle_delete_opportunity_document() {
+        if ( ! is_user_logged_in() ) {
+            wp_die( esc_html__( 'Unauthorized request.', 'cuba-investment-core' ), 401 );
+        }
+
+        $user_id = get_current_user_id();
+        $opp_id  = isset( $_POST['opportunity_id'] ) ? absint( $_POST['opportunity_id'] ) : 0;
+        $doc_id  = isset( $_POST['doc_id'] ) ? sanitize_text_field( wp_unslash( $_POST['doc_id'] ) ) : '';
+
+        $res = OpportunityService::delete_document( $user_id, $opp_id, $doc_id );
+
+        if ( is_wp_error( $res ) ) {
+            set_transient( 'cin_profile_error_' . $user_id, $res->get_error_message(), 60 );
+        } else {
+            set_transient( 'cin_profile_success_' . $user_id, __( 'Document removed.', 'cuba-investment-core' ), 60 );
+        }
+
+        wp_safe_redirect( add_query_arg( [ 'id' => $opp_id, 'step' => '6' ], home_url( '/business-owner/opportunities/create/' ) ) );
+        exit;
+    }
+
+    /**
+     * Handle direct document stream download from query args
+     */
+    public static function handle_download_request() {
+        if ( ! isset( $_GET['cin_action'] ) || 'download_doc' !== $_GET['cin_action'] ) {
+            return;
+        }
+
+        if ( ! is_user_logged_in() ) {
+            wp_die( esc_html__( 'Please sign in to access documents.', 'cuba-investment-core' ), 401 );
+        }
+
+        $user_id = get_current_user_id();
+        $opp_id  = isset( $_GET['opp_id'] ) ? absint( $_GET['opp_id'] ) : 0;
+        $doc_id  = isset( $_GET['doc_id'] ) ? sanitize_text_field( wp_unslash( $_GET['doc_id'] ) ) : '';
+
+        if ( ! $opp_id || ! $doc_id ) {
+            wp_die( esc_html__( 'Invalid download parameters.', 'cuba-investment-core' ), 400 );
+        }
+
+        OpportunityService::stream_document( $user_id, $opp_id, $doc_id );
         exit;
     }
 

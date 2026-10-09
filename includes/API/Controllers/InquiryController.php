@@ -39,6 +39,14 @@ class InquiryController {
                 'permission_callback' => 'is_user_logged_in',
             ],
         ] );
+
+        register_rest_route( Constants::API_NAMESPACE, '/inquiries/(?P<id>\d+)/withdraw', [
+            [
+                'methods'             => 'POST',
+                'callback'            => [ __CLASS__, 'withdraw_item' ],
+                'permission_callback' => 'is_user_logged_in',
+            ],
+        ] );
     }
 
     public static function can_send_inquiry() {
@@ -111,6 +119,22 @@ class InquiryController {
             'message' => ( 'accept' === $action )
                 ? __( 'Inquiry accepted. Direct connection and messaging initialized.', 'cuba-investment-core' )
                 : __( 'Inquiry declined.', 'cuba-investment-core' ),
+        ] );
+    }
+
+    public static function withdraw_item( \WP_REST_Request $request ) {
+        $user_id    = get_current_user_id();
+        $inquiry_id = (int) $request['id'];
+
+        $result = InquiryService::withdraw( $inquiry_id, $user_id );
+
+        if ( is_wp_error( $result ) ) {
+            return $result;
+        }
+
+        return rest_ensure_response( [
+            'success' => true,
+            'message' => __( 'Inquiry successfully withdrawn.', 'cuba-investment-core' ),
         ] );
     }
 }

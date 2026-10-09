@@ -61,16 +61,20 @@ class NotificationService {
 
         // Send email if requested
         if ( $send_email && is_email( $user->user_email ) ) {
-            $site_name = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
-            $subject   = sprintf( '[%s] %s', $site_name, $title );
-            $message   = sprintf(
-                "Hello %s,\n\n%s\n\n%s\n\nBest regards,\nCuba Investment Network",
-                $user->display_name,
-                $content,
-                ! empty( $action_url ) ? "View details: " . esc_url( $action_url ) : ''
-            );
+            try {
+                $site_name = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+                $subject   = sprintf( '[%s] %s', $site_name, $title );
+                $message   = sprintf(
+                    "Hello %s,\n\n%s\n\n%s\n\nBest regards,\nCuba Investment Network",
+                    $user->display_name,
+                    $content,
+                    ! empty( $action_url ) ? "View details: " . esc_url( $action_url ) : ''
+                );
 
-            wp_mail( $user->user_email, $subject, $message );
+                @wp_mail( $user->user_email, $subject, $message );
+            } catch ( \Throwable $e ) {
+                Logger::warning( 'Could not dispatch notification email: ' . $e->getMessage() );
+            }
         }
 
         return $notification_id;

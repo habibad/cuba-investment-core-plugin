@@ -728,8 +728,7 @@ class ProfileService {
         $available  = isset( $opp_counts->publish ) ? (int) $opp_counts->publish : 0;
 
         // 2. Saved Opportunities
-        $saved = (array) get_user_meta( $user_id, '_cin_saved_opportunities', true );
-        $saved_count = count( array_filter( $saved ) );
+        $saved_count = \CubaInvestment\Core\Services\SavedOpportunityService::count( $user_id );
 
         // 3. Enquiries Sent
         $t_inquiries = Constants::get_table_name( Constants::TABLE_INQUIRIES );
@@ -777,14 +776,28 @@ class ProfileService {
             Constants::POST_TYPE_OPPORTUNITY
         ) );
 
-        // 3. Investor Enquiries
+        // 3. Draft Opportunities
+        $drafts = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_author = %d AND post_type = %s AND post_status = 'draft'",
+            $user_id,
+            Constants::POST_TYPE_OPPORTUNITY
+        ) );
+
+        // 4. Under Review Opportunities
+        $under_review = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_author = %d AND post_type = %s AND post_status = 'pending'",
+            $user_id,
+            Constants::POST_TYPE_OPPORTUNITY
+        ) );
+
+        // 5. Investor Enquiries
         $t_inquiries = Constants::get_table_name( Constants::TABLE_INQUIRIES );
         $enquiries   = (int) $wpdb->get_var( $wpdb->prepare(
             "SELECT COUNT(*) FROM {$t_inquiries} WHERE business_user_id = %d",
             $user_id
         ) );
 
-        // 4. Active Connections
+        // 6. Active Connections
         $t_connections = Constants::get_table_name( Constants::TABLE_CONNECTIONS );
         $connections   = (int) $wpdb->get_var( $wpdb->prepare(
             "SELECT COUNT(*) FROM {$t_connections} WHERE business_user_id = %d AND status = %s",
@@ -793,10 +806,12 @@ class ProfileService {
         ) );
 
         return [
-            'my_opportunities'   => $my_opps,
-            'published_listings' => $published,
-            'investor_enquiries' => $enquiries,
-            'active_connections' => $connections,
+            'my_opportunities'           => $my_opps,
+            'published_listings'         => $published,
+            'draft_opportunities'        => $drafts,
+            'under_review_opportunities' => $under_review,
+            'investor_enquiries'         => $enquiries,
+            'active_connections'         => $connections,
         ];
     }
 
@@ -891,5 +906,77 @@ class ProfileService {
         }
 
         return $moved_file['url'];
+    }
+
+    /**
+     * Unified profile retrieval by user ID according to platform role
+     *
+     * @param int $user_id
+     * @return array
+     */
+    public static function get_profile( $user_id ) {
+        $user_id = absint( $user_id );
+        if ( ! $user_id ) {
+            return [];
+        }
+
+        if ( \CubaInvestment\Core\Auth\Permissions::is_investor( $user_id ) ) {
+            return self::get_investor_profile( $user_id );
+        } elseif ( \CubaInvestment\Core\Auth\Permissions::is_business_owner( $user_id ) ) {
+            $personal = self::get_business_owner_profile( $user_id );
+            $business = self::get_business_profile( $user_id );
+            return array_merge( $personal, [ 'business' => $business ] );
+        } else {
+            $user = get_userdata( $user_id );
+            return $user ? [
+                'id'           => $user->ID,
+                'email'        => $user->user_email,
+                'display_name' => $user->display_name,
+                'roles'        => (array) $user->roles,
+            ] : [];
+        }
+    }
+
+    /**
+     * Unified profile update according to platform role
+     *
+     * @param int   $user_id
+     * @param array $data
+     * @param array $files
+     * @return bool|\WP_Error
+     */
+    public static function update_profile( $user_id, array $data, array $files = [] ) {
+        $user_id = absint( $user_id );
+        if ( ! $user_id ) {
+            return new \WP_Error( 'unauthorized', __( 'Authentication required.', 'cuba-investment-core' ), [ 'status' => 401 ] );
+        }
+
+        if ( ! \CubaInvestment\Core\Auth\Permissions::is_account_active( $user_id ) ) {
+            return new \WP_Error( 'account_inactive', __( 'Your account is suspended. Changes are blocked.', 'cuba-investment-core' ), [ 'status' => 403 ] );
+        }
+
+        if ( \CubaInvestment\Core\Auth\Permissions::is_investor( $user_id ) ) {
+            return self::update_investor_profile( $user_id, $data, $files );
+        } elseif ( \CubaInvestment\Core\Auth\Permissions::is_business_owner( $user_id ) ) {
+            // Update business profile if business fields are supplied
+            if ( isset( $data['business_name'] ) || isset( $data['company_name'] ) || isset( $data['sector'] ) || isset( $data['description'] ) || ! empty( $files['company_logo'] ) ) {
+                $biz_res = self::update_business_profile( $user_id, $data, $files );
+                if ( is_wp_error( $biz_res ) ) {
+                    return $biz_res;
+                }
+            }
+
+            // Update personal founder profile if personal fields are supplied
+            if ( isset( $data['first_name'] ) || isset( $data['last_name'] ) || isset( $data['phone_number'] ) || isset( $data['founder_bio'] ) || isset( $data['bio'] ) || ! empty( $files['avatar'] ) ) {
+                $pers_res = self::update_business_owner_profile( $user_id, $data, $files );
+                if ( is_wp_error( $pers_res ) ) {
+                    return $pers_res;
+                }
+            }
+
+            return true;
+        }
+
+        return new \WP_Error( 'forbidden', __( 'Unauthorized role for profile operations.', 'cuba-investment-core' ), [ 'status' => 403 ] );
     }
 }

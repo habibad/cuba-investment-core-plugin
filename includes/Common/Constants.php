@@ -97,8 +97,9 @@ class Constants {
     const TABLE_CONVERSATIONS = 'cin_conversations';
     const TABLE_MESSAGES      = 'cin_messages';
     const TABLE_NOTIFICATIONS = 'cin_notifications';
-    const TABLE_SUBSCRIPTIONS = 'cin_subscriptions';
-    const TABLE_AUDIT_LOGS    = 'cin_audit_logs';
+    const TABLE_SUBSCRIPTIONS         = 'cin_subscriptions';
+    const TABLE_AUDIT_LOGS            = 'cin_audit_logs';
+    const TABLE_SAVED_OPPORTUNITIES   = 'cin_saved_opportunities';
 
     /**
      * Get full table name with WordPress prefix

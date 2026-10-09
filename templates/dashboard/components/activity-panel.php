@@ -62,10 +62,10 @@ $title      = $args['title'] ?? __( 'Recent Activity', 'cuba-investment-core' );
                 </svg>
             </div>
             <h4 class="text-sm font-heading font-bold text-slate-800 mb-1">
-                <?php esc_html_e( 'No recent activity recorded yet', 'cuba-investment-core' ); ?>
+                <?php esc_html_e( 'No recent account activity.', 'cuba-investment-core' ); ?>
             </h4>
             <p class="text-xs text-slate-500 max-w-sm leading-relaxed">
-                <?php esc_html_e( 'When you update your profile, submit inquiries, or establish connections, your platform activity history will appear here.', 'cuba-investment-core' ); ?>
+                <?php esc_html_e( 'Account updates, logins, and verified platform actions will be logged here automatically.', 'cuba-investment-core' ); ?>
             </p>
         </div>
     <?php endif; ?>

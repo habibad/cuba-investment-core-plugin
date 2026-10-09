@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class Inquiry {
+class Inquiry implements \ArrayAccess {
 
     public $id;
     public $opportunity_id;
@@ -56,8 +56,33 @@ class Inquiry {
             'message'          => $this->message,
             'capital_range'    => $this->capital_range,
             'status'           => $this->status,
+            'admin_notes'      => $this->admin_notes,
             'created_at'       => $this->created_at,
             'updated_at'       => $this->updated_at,
         ];
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetExists( $offset ) {
+        return property_exists( $this, $offset );
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetGet( $offset ) {
+        return property_exists( $this, $offset ) ? $this->$offset : null;
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetSet( $offset, $value ) {
+        if ( property_exists( $this, $offset ) ) {
+            $this->$offset = $value;
+        }
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetUnset( $offset ) {
+        if ( property_exists( $this, $offset ) ) {
+            $this->$offset = null;
+        }
     }
 }

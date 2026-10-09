@@ -18,7 +18,7 @@ class Sanitizer {
      *
      * @var array
      */
-    protected static $allowed_currencies = [ 'USD', 'EUR', 'CUP', 'CAD' ];
+    protected static $allowed_currencies = [ 'USD', 'EUR', 'GBP', 'CAD', 'CUP' ];
 
     /**
      * Official Cuban Provinces and Special Municipality

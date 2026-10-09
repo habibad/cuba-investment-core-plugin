@@ -18,7 +18,7 @@ class TemplateLoader {
     public static function init() {
         add_filter( 'query_vars', [ __CLASS__, 'register_query_vars' ] );
         add_action( 'init', [ __CLASS__, 'add_rewrite_rules' ] );
-        add_filter( 'template_include', [ __CLASS__, 'route_templates' ], 90 );
+        add_filter( 'template_include', [ __CLASS__, 'route_templates' ], 999 );
         add_filter( 'pre_get_document_title', [ __CLASS__, 'filter_document_title' ], 15 );
 
         // Suppress default WordPress Admin Bar on portal/dashboard routes & for non-admins
@@ -42,23 +42,49 @@ class TemplateLoader {
         add_rewrite_rule( '^forgot-password/?$', 'index.php?cin_auth_page=forgot-password', 'top' );
         add_rewrite_rule( '^reset-password/?$', 'index.php?cin_auth_page=reset-password', 'top' );
 
-        // Investor Dashboard & Profile routes
+        // Investor Dashboard, Profile & Dealflow routes
         add_rewrite_rule( '^investor/dashboard/?$', 'index.php?cin_auth_page=dashboard-investor', 'top' );
         add_rewrite_rule( '^investor/profile/?$', 'index.php?cin_auth_page=investor-profile', 'top' );
+        add_rewrite_rule( '^investor/saved-opportunities/?$', 'index.php?cin_auth_page=saved-opportunities', 'top' );
+        add_rewrite_rule( '^investor/enquiries/?$', 'index.php?cin_auth_page=enquiries-investor', 'top' );
+        add_rewrite_rule( '^investor/connections/?$', 'index.php?cin_auth_page=connections-investor', 'top' );
+        add_rewrite_rule( '^investor/messages/?$', 'index.php?cin_auth_page=messages-investor', 'top' );
         add_rewrite_rule( '^dashboard/investor/profile/?$', 'index.php?cin_auth_page=investor-profile', 'top' );
+        add_rewrite_rule( '^dashboard/investor/saved-opportunities/?$', 'index.php?cin_auth_page=saved-opportunities', 'top' );
+        add_rewrite_rule( '^dashboard/investor/enquiries/?$', 'index.php?cin_auth_page=enquiries-investor', 'top' );
+        add_rewrite_rule( '^dashboard/investor/connections/?$', 'index.php?cin_auth_page=connections-investor', 'top' );
+        add_rewrite_rule( '^dashboard/investor/messages/?$', 'index.php?cin_auth_page=messages-investor', 'top' );
         add_rewrite_rule( '^dashboard/investor/?$', 'index.php?cin_auth_page=dashboard-investor', 'top' );
 
-        // Business Owner Dashboard & Profile routes
+        // Business Owner Dashboard, Opportunities & Network routes
         add_rewrite_rule( '^business-owner/dashboard/?$', 'index.php?cin_auth_page=dashboard-business', 'top' );
         add_rewrite_rule( '^business-owner/profile/?$', 'index.php?cin_auth_page=business-owner-profile', 'top' );
         add_rewrite_rule( '^business-owner/business-profile/?$', 'index.php?cin_auth_page=business-profile', 'top' );
+        add_rewrite_rule( '^business-owner/opportunities/create/?$', 'index.php?cin_auth_page=opportunity-create', 'top' );
+        add_rewrite_rule( '^business-owner/opportunities/?$', 'index.php?cin_auth_page=opportunities', 'top' );
+        add_rewrite_rule( '^business-owner/enquiries/?$', 'index.php?cin_auth_page=enquiries-business', 'top' );
+        add_rewrite_rule( '^business-owner/connections/?$', 'index.php?cin_auth_page=connections-business', 'top' );
+        add_rewrite_rule( '^business-owner/messages/?$', 'index.php?cin_auth_page=messages-business', 'top' );
         add_rewrite_rule( '^dashboard/business/profile/?$', 'index.php?cin_auth_page=business-owner-profile', 'top' );
         add_rewrite_rule( '^dashboard/business/business-profile/?$', 'index.php?cin_auth_page=business-profile', 'top' );
+        add_rewrite_rule( '^dashboard/business/opportunities/create/?$', 'index.php?cin_auth_page=opportunity-create', 'top' );
+        add_rewrite_rule( '^dashboard/business/opportunities/?$', 'index.php?cin_auth_page=opportunities', 'top' );
+        add_rewrite_rule( '^dashboard/business/enquiries/?$', 'index.php?cin_auth_page=enquiries-business', 'top' );
+        add_rewrite_rule( '^dashboard/business/connections/?$', 'index.php?cin_auth_page=connections-business', 'top' );
+        add_rewrite_rule( '^dashboard/business/messages/?$', 'index.php?cin_auth_page=messages-business', 'top' );
         add_rewrite_rule( '^dashboard/business/?$', 'index.php?cin_auth_page=dashboard-business', 'top' );
 
-        // Generic Dashboard & Account routes
+        // Generic Dashboard, Messages & Account routes
         add_rewrite_rule( '^dashboard/?$', 'index.php?cin_auth_page=dashboard', 'top' );
+        add_rewrite_rule( '^dashboard/messages/?$', 'index.php?cin_auth_page=dashboard-messages', 'top' );
+        add_rewrite_rule( '^dashboard/connections/?$', 'index.php?cin_auth_page=dashboard-connections', 'top' );
         add_rewrite_rule( '^account/?$', 'index.php?cin_auth_page=account', 'top' );
+
+        // Automatically flush rewrites if not updated to version 1.3.0
+        if ( get_option( 'cin_rewrite_version' ) !== '1.3.0' ) {
+            flush_rewrite_rules( false );
+            update_option( 'cin_rewrite_version', '1.3.0' );
+        }
     }
 
     /**
@@ -88,16 +114,36 @@ class TemplateLoader {
                 'verify-email',
                 'forgot-password',
                 'reset-password',
-                'investor/dashboard'                 => 'dashboard-investor',
-                'investor/profile'                   => 'investor-profile',
-                'dashboard/investor'                 => 'dashboard-investor',
-                'dashboard/investor/profile'         => 'investor-profile',
+                'investor/dashboard'                  => 'dashboard-investor',
+                'investor/profile'                    => 'investor-profile',
+                'investor/saved-opportunities'        => 'saved-opportunities',
+                'investor/enquiries'                  => 'enquiries-investor',
+                'investor/connections'                => 'connections-investor',
+                'investor/messages'                   => 'messages-investor',
+                'dashboard/investor'                  => 'dashboard-investor',
+                'dashboard/investor/profile'          => 'investor-profile',
+                'dashboard/investor/saved-opportunities' => 'saved-opportunities',
+                'dashboard/investor/enquiries'        => 'enquiries-investor',
+                'dashboard/investor/connections'      => 'connections-investor',
+                'dashboard/investor/messages'         => 'messages-investor',
                 'business-owner/dashboard'            => 'dashboard-business',
-                'business-owner/profile'             => 'business-owner-profile',
-                'business-owner/business-profile'    => 'business-profile',
-                'dashboard/business'                 => 'dashboard-business',
-                'dashboard/business/profile'         => 'business-owner-profile',
-                'dashboard/business/business-profile'=> 'business-profile',
+                'business-owner/profile'              => 'business-owner-profile',
+                'business-owner/business-profile'     => 'business-profile',
+                'business-owner/opportunities/create' => 'opportunity-create',
+                'business-owner/opportunities'        => 'opportunities',
+                'business-owner/enquiries'            => 'enquiries-business',
+                'business-owner/connections'          => 'connections-business',
+                'business-owner/messages'             => 'messages-business',
+                'dashboard/business'                  => 'dashboard-business',
+                'dashboard/business/profile'          => 'business-owner-profile',
+                'dashboard/business/business-profile' => 'business-profile',
+                'dashboard/business/opportunities/create' => 'opportunity-create',
+                'dashboard/business/opportunities'    => 'opportunities',
+                'dashboard/business/enquiries'        => 'enquiries-business',
+                'dashboard/business/connections'      => 'connections-business',
+                'dashboard/business/messages'         => 'messages-business',
+                'dashboard/messages'                  => 'dashboard-messages',
+                'dashboard/connections'               => 'dashboard-connections',
                 'dashboard',
                 'account',
             ];
@@ -111,6 +157,49 @@ class TemplateLoader {
 
         if ( empty( $route ) ) {
             return $template;
+        }
+
+        // Normalize route aliases
+        $route_alias = [
+            'business-owner/profile'                 => 'business-owner-profile',
+            'business-owner/business-profile'        => 'business-profile',
+            'business-owner/enquiries'               => 'enquiries-business',
+            'business-owner/connections'             => 'connections-business',
+            'business-owner/messages'                => 'messages-business',
+            'investor/profile'                       => 'investor-profile',
+            'investor/saved-opportunities'           => 'saved-opportunities',
+            'investor/enquiries'                     => 'enquiries-investor',
+            'investor/connections'                   => 'connections-investor',
+            'investor/messages'                      => 'messages-investor',
+            'business-owner/dashboard'               => 'dashboard-business',
+            'investor/dashboard'                     => 'dashboard-investor',
+            'business-owner-business-profile'        => 'business-profile',
+            'dashboard/business/profile'             => 'business-owner-profile',
+            'dashboard/business/business-profile'    => 'business-profile',
+            'dashboard/business/enquiries'           => 'enquiries-business',
+            'dashboard/business/connections'         => 'connections-business',
+            'dashboard/business/messages'            => 'messages-business',
+            'dashboard/investor/profile'             => 'investor-profile',
+            'dashboard/investor/saved-opportunities' => 'saved-opportunities',
+            'dashboard/investor/enquiries'           => 'enquiries-investor',
+            'dashboard/investor/connections'         => 'connections-investor',
+            'dashboard/investor/messages'            => 'messages-investor',
+        ];
+        if ( isset( $route_alias[ $route ] ) ) {
+            $route = $route_alias[ $route ];
+        }
+
+        if ( in_array( $route, [ 'dashboard', 'dashboard-messages', 'dashboard-connections' ], true ) ) {
+            $current_u = wp_get_current_user();
+            $roles = (array) $current_u->roles;
+            $is_inv = in_array( Constants::ROLE_INVESTOR, $roles, true );
+            if ( 'dashboard' === $route ) {
+                $route = $is_inv ? 'dashboard-investor' : 'dashboard-business';
+            } elseif ( 'dashboard-messages' === $route ) {
+                $route = $is_inv ? 'messages-investor' : 'messages-business';
+            } elseif ( 'dashboard-connections' === $route ) {
+                $route = $is_inv ? 'connections-investor' : 'connections-business';
+            }
         }
 
         // Fix WordPress query state (ensure 200 OK, not 404)
@@ -131,9 +220,18 @@ class TemplateLoader {
             'reset-password'          => 'auth/reset-password.php',
             'dashboard-investor'      => 'dashboard/dashboard-investor.php',
             'investor-profile'        => 'dashboard/investor-profile.php',
+            'saved-opportunities'     => 'dashboard/saved-opportunities.php',
+            'enquiries-investor'      => 'dashboard/enquiries-investor.php',
             'dashboard-business'      => 'dashboard/dashboard-business.php',
             'business-owner-profile'  => 'dashboard/business-owner-profile.php',
             'business-profile'        => 'dashboard/business-profile.php',
+            'enquiries-business'      => 'dashboard/enquiries-business.php',
+            'connections-investor'    => 'dashboard/connections.php',
+            'connections-business'    => 'dashboard/connections.php',
+            'messages-investor'       => 'dashboard/messages.php',
+            'messages-business'       => 'dashboard/messages.php',
+            'opportunities'           => 'dashboard/opportunities.php',
+            'opportunity-create'      => 'dashboard/opportunity-create.php',
             'account'                 => 'dashboard/account.php',
         ];
 
@@ -192,6 +290,15 @@ class TemplateLoader {
             'dashboard-business'      => __( 'Business Owner Portal — Cuba Investment Network', 'cuba-investment-core' ),
             'business-owner-profile'  => __( 'Personal Profile — Cuba Investment Network', 'cuba-investment-core' ),
             'business-profile'        => __( 'Business Profile — Cuba Investment Network', 'cuba-investment-core' ),
+            'opportunities'           => __( 'My Opportunities — Cuba Investment Network', 'cuba-investment-core' ),
+            'opportunity-create'      => __( 'Create Investment Opportunity — Cuba Investment Network', 'cuba-investment-core' ),
+            'saved-opportunities'     => __( 'Saved Opportunities — Cuba Investment Network', 'cuba-investment-core' ),
+            'enquiries-investor'      => __( 'My Enquiries — Cuba Investment Network', 'cuba-investment-core' ),
+            'enquiries-business'      => __( 'Investor Enquiries — Cuba Investment Network', 'cuba-investment-core' ),
+            'connections-investor'    => __( 'Active Connections — Cuba Investment Network', 'cuba-investment-core' ),
+            'connections-business'    => __( 'Active Connections — Cuba Investment Network', 'cuba-investment-core' ),
+            'messages-investor'       => __( 'Direct Messages — Cuba Investment Network', 'cuba-investment-core' ),
+            'messages-business'       => __( 'Direct Messages — Cuba Investment Network', 'cuba-investment-core' ),
             'account'                 => __( 'Account Settings — Cuba Investment Network', 'cuba-investment-core' ),
         ];
 

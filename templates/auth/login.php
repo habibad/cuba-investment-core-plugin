@@ -22,6 +22,7 @@ $is_logged_out   = isset( $_GET['loggedout'] );
 $is_reset_ok     = isset( $_GET['reset'] ) && 'success' === $_GET['reset'];
 $is_verified_ok  = isset( $_GET['verified'] ) && 'success' === $_GET['verified'];
 $is_already_ver  = isset( $_GET['verified'] ) && 'already' === $_GET['verified'];
+$is_suspended    = isset( $_GET['error'] ) && 'suspended' === $_GET['error'];
 $resend_email    = isset( $_GET['resend_email'] ) ? sanitize_email( wp_unslash( $_GET['resend_email'] ) ) : '';
 $redirect_to     = isset( $_GET['redirect_to'] ) ? esc_url_raw( wp_unslash( $_GET['redirect_to'] ) ) : '';
 ?>
@@ -85,6 +86,19 @@ $redirect_to     = isset( $_GET['redirect_to'] ) ? esc_url_raw( wp_unslash( $_GE
                     <div>
                         <div class="font-bold text-blue-950 mb-0.5"><?php esc_html_e( 'Account Already Verified', 'cuba-investment-core' ); ?></div>
                         <div class="text-blue-800 text-xs sm:text-sm leading-relaxed"><?php esc_html_e( 'Your email address is already verified. Please sign in below.', 'cuba-investment-core' ); ?></div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <!-- Suspended Account Notice -->
+            <?php if ( $is_suspended ) : ?>
+                <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-xs sm:text-sm text-red-900 flex items-start gap-3" role="alert">
+                    <div class="w-6 h-6 rounded-full bg-red-100 text-red-700 flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">
+                        ⚠️
+                    </div>
+                    <div>
+                        <div class="font-bold text-red-950 mb-0.5"><?php esc_html_e( 'Account Suspended', 'cuba-investment-core' ); ?></div>
+                        <div class="text-red-800 text-xs sm:text-sm leading-relaxed"><?php esc_html_e( 'Your account access has been suspended. Please contact platform support for assistance.', 'cuba-investment-core' ); ?></div>
                     </div>
                 </div>
             <?php endif; ?>

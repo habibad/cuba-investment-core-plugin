@@ -316,6 +316,10 @@ class AuthManager {
         $user = wp_authenticate( $username_or_email, $password );
 
         if ( is_wp_error( $user ) ) {
+            if ( 'account_suspended' === $user->get_error_code() ) {
+                return $user;
+            }
+
             // Increment failed attempt counter (expires in 15 mins)
             set_transient( $lock_key, $fails + 1, 900 );
             Logger::warning( 'Failed login credentials attempt', [ 'identifier' => substr( $username_or_email, 0, 3 ) . '***' ] );
@@ -399,7 +403,7 @@ class AuthManager {
         }
 
         if ( in_array( 'administrator', $roles, true ) ) {
-            return admin_url();
+            return home_url( '/business-owner/dashboard/' );
         }
 
         return home_url( '/dashboard/' );

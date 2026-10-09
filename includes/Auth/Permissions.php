@@ -63,6 +63,23 @@ class Permissions {
     }
 
     /**
+     * Check if actor can edit target user profile
+     *
+     * @param int $actor_id
+     * @param int $target_user_id
+     * @return bool
+     */
+    public static function can_edit_profile( $actor_id, $target_user_id ) {
+        if ( ! $actor_id || ! $target_user_id ) {
+            return false;
+        }
+        if ( (int) $actor_id === (int) $target_user_id ) {
+            return self::is_account_active( $actor_id );
+        }
+        return self::is_admin_or_reviewer( $actor_id );
+    }
+
+    /**
      * Check if user can edit a specific opportunity
      *
      * @param int $user_id
@@ -153,6 +170,10 @@ class Permissions {
             return false;
         }
 
+        if ( ! self::is_account_active( $user_id ) ) {
+            return false;
+        }
+
         if ( self::is_admin_or_reviewer( $user_id ) ) {
             return true;
         }
@@ -172,4 +193,80 @@ class Permissions {
 
         return ( (int) $convo->participant_one_id === (int) $user_id ) || ( (int) $convo->participant_two_id === (int) $user_id );
     }
+
+    /**
+     * Check if user account is active
+     *
+     * @param int|null $user_id
+     * @return bool
+     */
+    public static function is_account_active( $user_id = null ) {
+        $user_id = $user_id ?: get_current_user_id();
+        if ( ! $user_id ) {
+            return false;
+        }
+
+        $status = get_user_meta( $user_id, '_cin_account_status', true );
+        return ( 'active' === $status || empty( $status ) );
+    }
+
+    /**
+     * Check if user account is suspended
+     *
+     * @param int|null $user_id
+     * @return bool
+     */
+    public static function is_account_suspended( $user_id = null ) {
+        $user_id = $user_id ?: get_current_user_id();
+        if ( ! $user_id ) {
+            return false;
+        }
+
+        $status = get_user_meta( $user_id, '_cin_account_status', true );
+        return ( 'suspended' === $status || 'disabled' === $status );
+    }
+
+    /**
+     * Check if user can manage saved opportunities (bookmark deals)
+     *
+     * @param int|null $user_id
+     * @return bool
+     */
+    public static function can_manage_saved_opportunities( $user_id = null ) {
+        $user_id = $user_id ?: get_current_user_id();
+        return self::is_investor( $user_id ) || self::is_admin_or_reviewer( $user_id );
+    }
+
+    /**
+     * Get primary platform role for user
+     *
+     * @param int|null $user_id
+     * @return string
+     */
+    public static function get_user_role( $user_id = null ) {
+        $user_id = $user_id ?: get_current_user_id();
+        if ( ! $user_id ) {
+            return '';
+        }
+
+        $user = get_userdata( $user_id );
+        if ( ! $user ) {
+            return '';
+        }
+
+        if ( in_array( Constants::ROLE_INVESTOR, (array) $user->roles, true ) ) {
+            return Constants::ROLE_INVESTOR;
+        }
+
+        if ( in_array( Constants::ROLE_BUSINESS_OWNER, (array) $user->roles, true ) ) {
+            return Constants::ROLE_BUSINESS_OWNER;
+        }
+
+        if ( in_array( 'administrator', (array) $user->roles, true ) ) {
+            return 'administrator';
+        }
+
+        return ! empty( $user->roles[0] ) ? $user->roles[0] : '';
+    }
 }
+

@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class Message {
+class Message implements \ArrayAccess {
 
     public $id;
     public $conversation_id;
@@ -47,5 +47,29 @@ class Message {
             'read_at'           => $this->read_at,
             'created_at'        => $this->created_at,
         ];
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetExists( $offset ) {
+        return property_exists( $this, $offset );
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetGet( $offset ) {
+        return property_exists( $this, $offset ) ? $this->$offset : null;
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetSet( $offset, $value ) {
+        if ( property_exists( $this, $offset ) ) {
+            $this->$offset = $value;
+        }
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetUnset( $offset ) {
+        if ( property_exists( $this, $offset ) ) {
+            $this->$offset = null;
+        }
     }
 }

@@ -3,8 +3,9 @@
  * Template: Account Settings & Security
  * Route: /account/
  *
- * Implements password management, membership tier overview,
- * and legal terms acceptance log using the unified dashboard layout.
+ * Implements Section A (Account Information), Section B (Personal Settings),
+ * Section C (Email Address & Verification), Section D (Password Change),
+ * and Free Membership status using the unified dashboard layout.
  *
  * @package CubaInvestment\Core
  */
@@ -26,8 +27,20 @@ $is_business_owner = in_array( Constants::ROLE_BUSINESS_OWNER, $roles, true );
 $first_name        = get_user_meta( $user->ID, 'first_name', true ) ?: $user->first_name;
 $last_name         = get_user_meta( $user->ID, 'last_name', true ) ?: $user->last_name;
 $account_status    = get_user_meta( $user->ID, '_cin_account_status', true ) ?: 'active';
+$is_verified       = (bool) get_user_meta( $user->ID, '_cin_email_verified', true );
 $membership_tier   = get_user_meta( $user->ID, '_cin_membership_tier', true ) ?: Constants::TIER_LAUNCH;
 $membership_status = get_user_meta( $user->ID, '_cin_membership_status', true ) ?: 'active';
+
+$notify_inquiries  = get_user_meta( $user->ID, '_cin_notify_inquiries', true );
+if ( '' === $notify_inquiries ) {
+    $notify_inquiries = 1;
+}
+$notify_news       = get_user_meta( $user->ID, '_cin_notify_announcements', true );
+if ( '' === $notify_news ) {
+    $notify_news = 1;
+}
+$pref_language     = get_user_meta( $user->ID, '_cin_preferred_language', true ) ?: 'en';
+
 $terms_accepted_at = get_user_meta( $user->ID, '_cin_terms_accepted_at', true );
 $terms_version     = get_user_meta( $user->ID, '_cin_terms_version', true ) ?: '1.0';
 
@@ -35,6 +48,9 @@ $error_msg   = FormHandler::get_profile_flash_error( $user->ID );
 $success_msg = FormHandler::get_profile_flash_success( $user->ID );
 if ( empty( $success_msg ) && isset( $_GET['pw_updated'] ) ) {
     $success_msg = __( 'Your password has been changed successfully.', 'cuba-investment-core' );
+}
+if ( empty( $success_msg ) && isset( $_GET['personal_updated'] ) ) {
+    $success_msg = __( 'Personal settings updated successfully.', 'cuba-investment-core' );
 }
 
 $dashboard_url = AuthManager::get_user_dashboard_url( $user );
@@ -57,10 +73,10 @@ require_once CIN_PLUGIN_DIR . 'templates/dashboard/layout/sidebar.php';
                     &larr; <?php esc_html_e( 'Back to Portal Dashboard', 'cuba-investment-core' ); ?>
                 </a>
                 <h1 class="text-2xl sm:text-3xl font-heading font-extrabold text-slate-900 tracking-tight">
-                    <?php esc_html_e( 'Account Settings & Security', 'cuba-investment-core' ); ?>
+                    <?php esc_html_e( 'Account Settings & Operations', 'cuba-investment-core' ); ?>
                 </h1>
                 <p class="text-sm text-slate-500 mt-1">
-                    <?php esc_html_e( 'Manage your login credentials, password security, and active membership tier.', 'cuba-investment-core' ); ?>
+                    <?php esc_html_e( 'Manage your personal settings, password security, and active membership tier.', 'cuba-investment-core' ); ?>
                 </p>
             </div>
         </div>
@@ -84,16 +100,17 @@ require_once CIN_PLUGIN_DIR . 'templates/dashboard/layout/sidebar.php';
             </div>
         <?php endif; ?>
 
-        <!-- Account Profile Summary Card -->
+        <!-- SECTION A: Account Information -->
         <div class="card bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-xs">
             <h2 class="text-base font-heading font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100 flex items-center justify-between">
-                <span><?php esc_html_e( 'Profile Summary', 'cuba-investment-core' ); ?></span>
+                <span><?php esc_html_e( 'Section A — Account Information', 'cuba-investment-core' ); ?></span>
                 <span class="text-xs font-normal text-slate-500">
-                    <?php esc_html_e( 'Registered: ', 'cuba-investment-core' ); ?><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $user->user_registered ) ) ); ?>
+                    <?php esc_html_e( 'Member Since: ', 'cuba-investment-core' ); ?><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $user->user_registered ) ) ); ?>
                 </span>
             </h2>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Full Name -->
                 <div>
                     <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Full Name', 'cuba-investment-core' ); ?></span>
                     <span class="text-sm font-bold text-slate-900 mt-1 block">
@@ -101,13 +118,15 @@ require_once CIN_PLUGIN_DIR . 'templates/dashboard/layout/sidebar.php';
                     </span>
                 </div>
 
+                <!-- Email Address -->
                 <div>
                     <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Email Address', 'cuba-investment-core' ); ?></span>
                     <span class="text-sm font-bold text-slate-900 mt-1 block truncate"><?php echo esc_html( $user->user_email ); ?></span>
                 </div>
 
+                <!-- Account Type / Role -->
                 <div>
-                    <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Account Role', 'cuba-investment-core' ); ?></span>
+                    <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Account Type', 'cuba-investment-core' ); ?></span>
                     <span class="text-sm font-bold text-primary mt-1 block">
                         <?php 
                         if ( $is_investor ) {
@@ -121,53 +140,196 @@ require_once CIN_PLUGIN_DIR . 'templates/dashboard/layout/sidebar.php';
                     </span>
                 </div>
 
+                <!-- Membership Type -->
+                <div>
+                    <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Membership Type', 'cuba-investment-core' ); ?></span>
+                    <span class="text-sm font-bold text-slate-900 mt-1 block">
+                        <?php esc_html_e( 'Launch Early Access (Free)', 'cuba-investment-core' ); ?>
+                    </span>
+                </div>
+
+                <!-- Account Status -->
                 <div>
                     <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Account Status', 'cuba-investment-core' ); ?></span>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700 mt-1">
-                        ● <?php echo esc_html( ucfirst( $account_status ) ); ?>
-                    </span>
+                    <?php if ( 'active' === $account_status ) : ?>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700 mt-1">
+                            ● <?php esc_html_e( 'Active', 'cuba-investment-core' ); ?>
+                        </span>
+                    <?php elseif ( 'suspended' === $account_status ) : ?>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-50 text-red-700 mt-1">
+                            ● <?php esc_html_e( 'Suspended', 'cuba-investment-core' ); ?>
+                        </span>
+                    <?php else : ?>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-700 mt-1">
+                            ● <?php echo esc_html( ucfirst( str_replace( '_', ' ', $account_status ) ) ); ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Email Verification Status -->
+                <div>
+                    <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Email Verification', 'cuba-investment-core' ); ?></span>
+                    <?php if ( $is_verified ) : ?>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700 mt-1">
+                            ✓ <?php esc_html_e( 'Verified', 'cuba-investment-core' ); ?>
+                        </span>
+                    <?php else : ?>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-700 mt-1">
+                            ● <?php esc_html_e( 'Pending Verification', 'cuba-investment-core' ); ?>
+                        </span>
+                    <?php endif; ?>
                 </div>
             </div>
 
             <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-end">
                 <a href="<?php echo esc_url( $is_investor ? home_url( '/investor/profile/' ) : home_url( '/business-owner/profile/' ) ); ?>" class="btn btn-outline btn-sm font-semibold text-primary border-primary hover:bg-primary hover:text-white">
-                    <?php esc_html_e( 'Edit Full Profile &rarr;', 'cuba-investment-core' ); ?>
+                    <?php esc_html_e( 'Edit Full Profile Details &rarr;', 'cuba-investment-core' ); ?>
                 </a>
             </div>
         </div>
 
-        <!-- Membership & Access Tier -->
-        <div class="card bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-xs">
-            <h2 class="text-base font-heading font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100">
-                <?php esc_html_e( 'Membership & Access Tier', 'cuba-investment-core' ); ?>
-            </h2>
+        <!-- SECTION B: Personal Settings -->
+        <div id="personal-settings" class="card bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-xs space-y-6">
+            <div class="pb-3 border-b border-slate-100">
+                <h2 class="text-base font-heading font-bold text-slate-900">
+                    <?php esc_html_e( 'Section B — Personal Settings', 'cuba-investment-core' ); ?>
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    <?php esc_html_e( 'Update your personal name and notification preferences across the Cuba Investment Network.', 'cuba-investment-core' ); ?>
+                </p>
+            </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Current Tier', 'cuba-investment-core' ); ?></span>
-                    <span class="text-base font-bold text-primary mt-1 block"><?php esc_html_e( 'Launch Early Access', 'cuba-investment-core' ); ?></span>
-                    <span class="text-xs text-emerald-600 font-semibold block mt-0.5"><?php esc_html_e( '100% Free Platform Access', 'cuba-investment-core' ); ?></span>
+            <form method="post" action="" class="space-y-5 max-w-xl">
+                <input type="hidden" name="cin_action" value="cin_update_personal_settings">
+                <?php wp_nonce_field( 'cin_update_personal_settings', '_cin_nonce' ); ?>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="first_name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            <?php esc_html_e( 'First Name', 'cuba-investment-core' ); ?> <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="first_name" name="first_name" value="<?php echo esc_attr( $first_name ); ?>" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm text-slate-900 transition-colors">
+                    </div>
+
+                    <div>
+                        <label for="last_name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            <?php esc_html_e( 'Last Name', 'cuba-investment-core' ); ?> <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="last_name" name="last_name" value="<?php echo esc_attr( $last_name ); ?>" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm text-slate-900 transition-colors">
+                    </div>
                 </div>
 
-                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Billing Amount', 'cuba-investment-core' ); ?></span>
-                    <span class="text-base font-bold text-slate-900 mt-1 block">$0.00 / month</span>
-                    <span class="text-xs text-slate-500 block mt-0.5"><?php esc_html_e( 'No credit card required', 'cuba-investment-core' ); ?></span>
+                <div>
+                    <label for="preferred_language" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                        <?php esc_html_e( 'Preferred Communication Language', 'cuba-investment-core' ); ?>
+                    </label>
+                    <select id="preferred_language" name="preferred_language" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm text-slate-900 transition-colors bg-white">
+                        <option value="en" <?php selected( $pref_language, 'en' ); ?>><?php esc_html_e( 'English (Default)', 'cuba-investment-core' ); ?></option>
+                        <option value="es" <?php selected( $pref_language, 'es' ); ?>><?php esc_html_e( 'Español (Spanish)', 'cuba-investment-core' ); ?></option>
+                    </select>
                 </div>
 
-                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Membership Status', 'cuba-investment-core' ); ?></span>
-                    <span class="text-base font-bold text-emerald-700 mt-1 block">✓ <?php echo esc_html( ucfirst( $membership_status ) ); ?></span>
-                    <span class="text-xs text-slate-500 block mt-0.5"><?php esc_html_e( 'Recurring Billing: Disabled', 'cuba-investment-core' ); ?></span>
+                <div class="pt-2 border-t border-slate-100 space-y-3">
+                    <span class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        <?php esc_html_e( 'Communication & Notification Preferences', 'cuba-investment-core' ); ?>
+                    </span>
+
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="notify_inquiries" value="1" <?php checked( (bool) $notify_inquiries ); ?> class="mt-0.5 rounded text-primary focus:ring-primary">
+                        <span class="text-xs text-slate-600">
+                            <strong><?php esc_html_e( 'Direct Inquiries & Match Alerts', 'cuba-investment-core' ); ?></strong><br>
+                            <span class="text-slate-400"><?php esc_html_e( 'Receive email notifications when an investor or entrepreneur responds to an introduction.', 'cuba-investment-core' ); ?></span>
+                        </span>
+                    </label>
+
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="notify_announcements" value="1" <?php checked( (bool) $notify_news ); ?> class="mt-0.5 rounded text-primary focus:ring-primary">
+                        <span class="text-xs text-slate-600">
+                            <strong><?php esc_html_e( 'Platform Updates & Cuba Market Insights', 'cuba-investment-core' ); ?></strong><br>
+                            <span class="text-slate-400"><?php esc_html_e( 'Receive platform feature announcements and curated ecosystem briefings.', 'cuba-investment-core' ); ?></span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="btn btn-primary btn-md px-6 py-2.5 font-bold shadow-xs hover:shadow transition-all cursor-pointer">
+                        <?php esc_html_e( 'Save Personal Settings', 'cuba-investment-core' ); ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- SECTION C: Email Address & Verification -->
+        <div id="email-address" class="card bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-xs space-y-5">
+            <div class="pb-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                    <h2 class="text-base font-heading font-bold text-slate-900">
+                        <?php esc_html_e( 'Section C — Primary Email Address', 'cuba-investment-core' ); ?>
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        <?php esc_html_e( 'Your registered portal email address and verification credential.', 'cuba-investment-core' ); ?>
+                    </p>
+                </div>
+
+                <div>
+                    <?php if ( $is_verified ) : ?>
+                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            ✓ <?php esc_html_e( 'Verified Email', 'cuba-investment-core' ); ?>
+                        </span>
+                    <?php else : ?>
+                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            ● <?php esc_html_e( 'Pending Verification', 'cuba-investment-core' ); ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="max-w-xl space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                        <?php esc_html_e( 'Current Email Address', 'cuba-investment-core' ); ?>
+                    </label>
+                    <div class="relative">
+                        <input type="email" value="<?php echo esc_attr( $user->user_email ); ?>" readonly class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-700 font-medium cursor-not-allowed">
+                        <span class="absolute inset-y-0 right-3 flex items-center text-slate-400" title="<?php esc_attr_e( 'Protected read-only field', 'cuba-investment-core' ); ?>">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+
+                <?php if ( ! $is_verified ) : ?>
+                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-xs text-amber-800">
+                        <span><?php esc_html_e( 'Your email is not verified yet. Please check your inbox or request a new verification email.', 'cuba-investment-core' ); ?></span>
+                        <form method="post" action="">
+                            <input type="hidden" name="cin_action" value="cin_resend_verification">
+                            <input type="hidden" name="email" value="<?php echo esc_attr( $user->user_email ); ?>">
+                            <?php wp_nonce_field( 'cin_resend_verification', '_cin_nonce' ); ?>
+                            <button type="submit" class="font-bold underline text-amber-900 hover:text-amber-950 cursor-pointer">
+                                <?php esc_html_e( 'Resend Verification', 'cuba-investment-core' ); ?>
+                            </button>
+                        </form>
+                    </div>
+                <?php endif; ?>
+
+                <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-500 leading-relaxed flex items-start gap-3">
+                    <svg class="w-4 h-4 text-slate-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                        <strong class="text-slate-700"><?php esc_html_e( 'Why is email modification locked?', 'cuba-investment-core' ); ?></strong><br>
+                        <?php esc_html_e( 'To prevent account takeover, protect verified transaction logs, and maintain marketplace integrity, primary email addresses cannot be altered directly via metadata editing. If you require an email update, please submit a verified support inquiry.', 'cuba-investment-core' ); ?>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Security: Change Password Form -->
+        <!-- SECTION D: Password & Security -->
         <div id="security" class="card bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-xs space-y-6">
             <div class="pb-3 border-b border-slate-100">
                 <h2 class="text-base font-heading font-bold text-slate-900">
-                    <?php esc_html_e( 'Password & Security', 'cuba-investment-core' ); ?>
+                    <?php esc_html_e( 'Section D — Password & Security', 'cuba-investment-core' ); ?>
                 </h2>
                 <p class="text-xs text-slate-500 mt-0.5">
                     <?php esc_html_e( 'Update your password directly below. Choose a strong password with at least 8 characters.', 'cuba-investment-core' ); ?>
@@ -206,6 +368,33 @@ require_once CIN_PLUGIN_DIR . 'templates/dashboard/layout/sidebar.php';
                     </button>
                 </div>
             </form>
+        </div>
+
+        <!-- Free Membership & Access Tier -->
+        <div class="card bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-xs">
+            <h2 class="text-base font-heading font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100">
+                <?php esc_html_e( 'Membership & Access Tier', 'cuba-investment-core' ); ?>
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Membership Type', 'cuba-investment-core' ); ?></span>
+                    <span class="text-base font-bold text-primary mt-1 block"><?php esc_html_e( 'Launch Early Access', 'cuba-investment-core' ); ?></span>
+                    <span class="text-xs text-emerald-600 font-semibold block mt-0.5"><?php esc_html_e( '100% Free Platform Access', 'cuba-investment-core' ); ?></span>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Billing Amount', 'cuba-investment-core' ); ?></span>
+                    <span class="text-base font-bold text-slate-900 mt-1 block">$0.00 / month</span>
+                    <span class="text-xs text-slate-500 block mt-0.5"><?php esc_html_e( 'No payment required during launch', 'cuba-investment-core' ); ?></span>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block"><?php esc_html_e( 'Membership Status', 'cuba-investment-core' ); ?></span>
+                    <span class="text-base font-bold text-emerald-700 mt-1 block">✓ <?php echo esc_html( ucfirst( $membership_status ) ); ?></span>
+                    <span class="text-xs text-slate-500 block mt-0.5"><?php esc_html_e( 'Recurring Billing: Disabled', 'cuba-investment-core' ); ?></span>
+                </div>
+            </div>
         </div>
 
         <!-- Legal & Compliance Log -->

@@ -18,6 +18,7 @@ $user = wp_get_current_user();
 $roles = (array) $user->roles;
 $is_investor = in_array( Constants::ROLE_INVESTOR, $roles, true );
 $is_business = in_array( Constants::ROLE_BUSINESS_OWNER, $roles, true );
+$is_admin    = in_array( 'administrator', $roles, true );
 
 $first_name = get_user_meta( $user->ID, 'first_name', true ) ?: $user->first_name;
 $last_name  = get_user_meta( $user->ID, 'last_name', true ) ?: $user->last_name;
@@ -40,10 +41,18 @@ if ( ! empty( $site_path ) && 0 === strpos( $current_path, $site_path ) ) {
     $current_path = trim( substr( $current_path, strlen( $site_path ) ), '/' );
 }
 
-$role_badge = $is_investor ? __( 'Investor Portal', 'cuba-investment-core' ) : ( $is_business ? __( 'Business Portal', 'cuba-investment-core' ) : __( 'Admin Portal', 'cuba-investment-core' ) );
+if ( $is_admin ) {
+    if ( false !== strpos( $current_path, 'investor' ) ) {
+        $is_investor = true;
+    } else {
+        $is_business = true;
+    }
+}
+
+$role_badge = $is_admin ? __( 'Admin Portal', 'cuba-investment-core' ) : ( $is_investor ? __( 'Investor Portal', 'cuba-investment-core' ) : __( 'Business Portal', 'cuba-investment-core' ) );
 
 if ( ! function_exists( 'cin_dashboard_render_nav_items' ) ) {
-    function cin_dashboard_render_nav_items( $is_investor, $is_business, $current_path ) {
+    function cin_dashboard_render_nav_items( $is_investor, $is_business, $current_path, $is_admin = false ) {
         // Normalization
         $current_path = trim( $current_path, '/' );
 
@@ -95,45 +104,53 @@ if ( ! function_exists( 'cin_dashboard_render_nav_items' ) ) {
                     <?php esc_html_e( 'Network & Dealflow', 'cuba-investment-core' ); ?>
                 </p>
                 <div class="space-y-1">
-                    <div class="sidebar-nav-item flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 cursor-not-allowed">
+                    <?php
+                    $is_active = in_array( $current_path, [ 'investor/saved-opportunities', 'dashboard/investor/saved-opportunities' ], true );
+                    ?>
+                    <a href="<?php echo esc_url( home_url( '/investor/saved-opportunities/' ) ); ?>" class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all <?php echo $is_active ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'; ?>">
                         <div class="flex items-center gap-3">
-                            <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-4 h-4 <?php echo $is_active ? 'text-white' : 'text-slate-400'; ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                             </svg>
                             <span class="sidebar-text"><?php esc_html_e( 'Saved Opportunities', 'cuba-investment-core' ); ?></span>
                         </div>
-                        <span class="sidebar-badge text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-400"><?php esc_html_e( 'Phase 04', 'cuba-investment-core' ); ?></span>
-                    </div>
+                    </a>
 
-                    <div class="sidebar-nav-item flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 cursor-not-allowed">
+                    <?php
+                    $is_active = in_array( $current_path, [ 'investor/enquiries', 'dashboard/investor/enquiries' ], true );
+                    ?>
+                    <a href="<?php echo esc_url( home_url( '/investor/enquiries/' ) ); ?>" class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all <?php echo $is_active ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'; ?>">
                         <div class="flex items-center gap-3">
-                            <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-4 h-4 <?php echo $is_active ? 'text-white' : 'text-slate-400'; ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                             </svg>
                             <span class="sidebar-text"><?php esc_html_e( 'My Enquiries', 'cuba-investment-core' ); ?></span>
                         </div>
-                        <span class="sidebar-badge text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-400"><?php esc_html_e( 'Phase 04', 'cuba-investment-core' ); ?></span>
-                    </div>
+                    </a>
 
-                    <div class="sidebar-nav-item flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 cursor-not-allowed">
+                    <?php
+                    $is_active = in_array( $current_path, [ 'investor/connections', 'dashboard/investor/connections' ], true );
+                    ?>
+                    <a href="<?php echo esc_url( home_url( '/investor/connections/' ) ); ?>" class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all <?php echo $is_active ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'; ?>">
                         <div class="flex items-center gap-3">
-                            <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-4 h-4 <?php echo $is_active ? 'text-white' : 'text-slate-400'; ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
                             <span class="sidebar-text"><?php esc_html_e( 'Connections', 'cuba-investment-core' ); ?></span>
                         </div>
-                        <span class="sidebar-badge text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-400"><?php esc_html_e( 'Phase 04', 'cuba-investment-core' ); ?></span>
-                    </div>
+                    </a>
 
-                    <div class="sidebar-nav-item flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 cursor-not-allowed">
+                    <?php
+                    $is_active = in_array( $current_path, [ 'investor/messages', 'dashboard/investor/messages' ], true );
+                    ?>
+                    <a href="<?php echo esc_url( home_url( '/investor/messages/' ) ); ?>" class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all <?php echo $is_active ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'; ?>">
                         <div class="flex items-center gap-3">
-                            <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-4 h-4 <?php echo $is_active ? 'text-white' : 'text-slate-400'; ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                             </svg>
                             <span class="sidebar-text"><?php esc_html_e( 'Messages', 'cuba-investment-core' ); ?></span>
                         </div>
-                        <span class="sidebar-badge text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-400"><?php esc_html_e( 'Phase 04', 'cuba-investment-core' ); ?></span>
-                    </div>
+                    </a>
                 </div>
             </div>
 
@@ -188,55 +205,104 @@ if ( ! function_exists( 'cin_dashboard_render_nav_items' ) ) {
                     <?php esc_html_e( 'Opportunities & Network', 'cuba-investment-core' ); ?>
                 </p>
                 <div class="space-y-1">
-                    <div class="sidebar-nav-item flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 cursor-not-allowed">
+                    <?php
+                    $is_active = in_array( $current_path, [ 'business-owner/opportunities', 'dashboard/business/opportunities' ], true );
+                    ?>
+                    <a href="<?php echo esc_url( home_url( '/business-owner/opportunities/' ) ); ?>" class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all <?php echo $is_active ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'; ?>">
                         <div class="flex items-center gap-3">
-                            <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-4 h-4 <?php echo $is_active ? 'text-white' : 'text-slate-400'; ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             <span class="sidebar-text"><?php esc_html_e( 'My Opportunities', 'cuba-investment-core' ); ?></span>
                         </div>
-                        <span class="sidebar-badge text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-400"><?php esc_html_e( 'Phase 05', 'cuba-investment-core' ); ?></span>
-                    </div>
+                    </a>
 
-                    <div class="sidebar-nav-item flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 cursor-not-allowed">
+                    <?php
+                    $is_active = in_array( $current_path, [ 'business-owner/opportunities/create', 'dashboard/business/opportunities/create' ], true );
+                    ?>
+                    <a href="<?php echo esc_url( home_url( '/business-owner/opportunities/create/' ) ); ?>" class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all <?php echo $is_active ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'; ?>">
                         <div class="flex items-center gap-3">
-                            <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-4 h-4 <?php echo $is_active ? 'text-white' : 'text-slate-400'; ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <span class="sidebar-text"><?php esc_html_e( 'Create Opportunity', 'cuba-investment-core' ); ?></span>
                         </div>
-                        <span class="sidebar-badge text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-400"><?php esc_html_e( 'Phase 05', 'cuba-investment-core' ); ?></span>
-                    </div>
+                    </a>
 
-                    <div class="sidebar-nav-item flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 cursor-not-allowed">
+                    <?php
+                    $is_active = in_array( $current_path, [ 'business-owner/enquiries', 'dashboard/business/enquiries' ], true );
+                    ?>
+                    <a href="<?php echo esc_url( home_url( '/business-owner/enquiries/' ) ); ?>" class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all <?php echo $is_active ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'; ?>">
                         <div class="flex items-center gap-3">
-                            <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-4 h-4 <?php echo $is_active ? 'text-white' : 'text-slate-400'; ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                             </svg>
                             <span class="sidebar-text"><?php esc_html_e( 'Investor Enquiries', 'cuba-investment-core' ); ?></span>
                         </div>
-                        <span class="sidebar-badge text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-400"><?php esc_html_e( 'Phase 04', 'cuba-investment-core' ); ?></span>
-                    </div>
+                    </a>
 
-                    <div class="sidebar-nav-item flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 cursor-not-allowed">
+                    <?php
+                    $is_active = in_array( $current_path, [ 'business-owner/connections', 'dashboard/business/connections' ], true );
+                    ?>
+                    <a href="<?php echo esc_url( home_url( '/business-owner/connections/' ) ); ?>" class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all <?php echo $is_active ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'; ?>">
                         <div class="flex items-center gap-3">
-                            <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-4 h-4 <?php echo $is_active ? 'text-white' : 'text-slate-400'; ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
                             <span class="sidebar-text"><?php esc_html_e( 'Connections', 'cuba-investment-core' ); ?></span>
                         </div>
-                        <span class="sidebar-badge text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-400"><?php esc_html_e( 'Phase 04', 'cuba-investment-core' ); ?></span>
-                    </div>
+                    </a>
 
-                    <div class="sidebar-nav-item flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 cursor-not-allowed">
+                    <?php
+                    $is_active = in_array( $current_path, [ 'business-owner/messages', 'dashboard/business/messages' ], true );
+                    ?>
+                    <a href="<?php echo esc_url( home_url( '/business-owner/messages/' ) ); ?>" class="sidebar-nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all <?php echo $is_active ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'; ?>">
                         <div class="flex items-center gap-3">
-                            <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-4 h-4 <?php echo $is_active ? 'text-white' : 'text-slate-400'; ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                             </svg>
                             <span class="sidebar-text"><?php esc_html_e( 'Messages', 'cuba-investment-core' ); ?></span>
                         </div>
-                        <span class="sidebar-badge text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-400"><?php esc_html_e( 'Phase 04', 'cuba-investment-core' ); ?></span>
-                    </div>
+                    </a>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php if ( $is_admin ) : ?>
+            <!-- GROUP: Administrator Portal Tools -->
+            <div>
+                <p class="sidebar-text px-3 text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-2">
+                    <?php esc_html_e( 'Admin Controls', 'cuba-investment-core' ); ?>
+                </p>
+                <div class="space-y-1">
+                    <?php if ( $is_investor ) : ?>
+                        <a href="<?php echo esc_url( home_url( '/business-owner/dashboard/' ) ); ?>" class="sidebar-nav-item flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                                <span class="sidebar-text"><?php esc_html_e( 'Switch to Business Portal', 'cuba-investment-core' ); ?></span>
+                            </div>
+                        </a>
+                    <?php else : ?>
+                        <a href="<?php echo esc_url( home_url( '/investor/dashboard/' ) ); ?>" class="sidebar-nav-item flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                                <span class="sidebar-text"><?php esc_html_e( 'Switch to Investor Portal', 'cuba-investment-core' ); ?></span>
+                            </div>
+                        </a>
+                    <?php endif; ?>
+                    <a href="<?php echo esc_url( admin_url() ); ?>" class="sidebar-nav-item flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span class="sidebar-text"><?php esc_html_e( 'WordPress Admin Area', 'cuba-investment-core' ); ?></span>
+                        </div>
+                    </a>
                 </div>
             </div>
         <?php endif; ?>
@@ -298,7 +364,7 @@ if ( ! function_exists( 'cin_dashboard_render_nav_items' ) ) {
 
         <!-- Navigation Links (Scrollable) -->
         <div class="flex-1 overflow-y-auto px-3.5 py-4 space-y-6">
-            <?php cin_dashboard_render_nav_items( $is_investor, $is_business, $current_path ); ?>
+            <?php cin_dashboard_render_nav_items( $is_investor, $is_business, $current_path, $is_admin ); ?>
         </div>
 
         <!-- Drawer Bottom User Strip -->
@@ -341,7 +407,7 @@ if ( ! function_exists( 'cin_dashboard_render_nav_items' ) ) {
 
     <!-- Navigation Menu (Scrollable) -->
     <div class="flex-1 overflow-y-auto px-3.5 py-5 space-y-6">
-        <?php cin_dashboard_render_nav_items( $is_investor, $is_business, $current_path ); ?>
+        <?php cin_dashboard_render_nav_items( $is_investor, $is_business, $current_path, $is_admin ); ?>
     </div>
 
     <!-- Bottom User Strip -->

@@ -59,6 +59,7 @@ class Migrations {
             Constants::TABLE_NOTIFICATIONS,
             Constants::TABLE_SUBSCRIPTIONS,
             Constants::TABLE_AUDIT_LOGS,
+            Constants::TABLE_SAVED_OPPORTUNITIES,
         ];
 
         $missing = [];
@@ -95,6 +96,7 @@ class Migrations {
             Constants::TABLE_NOTIFICATIONS,
             Constants::TABLE_SUBSCRIPTIONS,
             Constants::TABLE_AUDIT_LOGS,
+            Constants::TABLE_SAVED_OPPORTUNITIES,
         ];
 
         foreach ( $tables as $suffix ) {

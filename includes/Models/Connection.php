@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class Connection {
+class Connection implements \ArrayAccess {
 
     public $id;
     public $investor_user_id;
@@ -47,5 +47,29 @@ class Connection {
             'connected_at'      => $this->connected_at,
             'updated_at'        => $this->updated_at,
         ];
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetExists( $offset ) {
+        return property_exists( $this, $offset );
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetGet( $offset ) {
+        return property_exists( $this, $offset ) ? $this->$offset : null;
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetSet( $offset, $value ) {
+        if ( property_exists( $this, $offset ) ) {
+            $this->$offset = $value;
+        }
+    }
+
+    #[\ReturnTypeWillChange]
+    public function offsetUnset( $offset ) {
+        if ( property_exists( $this, $offset ) ) {
+            $this->$offset = null;
+        }
     }
 }

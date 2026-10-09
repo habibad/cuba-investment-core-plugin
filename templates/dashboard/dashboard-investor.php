@@ -21,6 +21,10 @@ $first_name = get_user_meta( $user->ID, 'first_name', true ) ?: $user->first_nam
 $profile    = ProfileService::get_investor_profile( $user->ID );
 $metrics    = ProfileService::get_investor_metrics( $user->ID );
 $activities = ProfileService::get_recent_activity( $user->ID, 5 );
+$is_email_verified = (bool) get_user_meta( $user->ID, '_cin_email_verified', true );
+$account_status    = get_user_meta( $user->ID, '_cin_account_status', true ) ?: 'active';
+$membership_tier   = get_user_meta( $user->ID, '_cin_membership_tier', true ) ?: Constants::TIER_LAUNCH;
+$membership_status = get_user_meta( $user->ID, '_cin_membership_status', true ) ?: 'active';
 
 // Set Topbar Parameters
 $page_title = __( 'Investor Overview', 'cuba-investment-core' );
@@ -73,7 +77,7 @@ require_once CIN_PLUGIN_DIR . 'templates/dashboard/layout/sidebar.php';
             $args = [
                 'title'       => __( 'Available Opportunities', 'cuba-investment-core' ),
                 'value'       => $metrics['available_opportunities'],
-                'note'        => __( 'Verified Cuban listings', 'cuba-investment-core' ),
+                'note'        => __( 'Published business opportunities', 'cuba-investment-core' ),
                 'icon_svg'    => $icon_opps,
                 'color_class' => 'emerald',
                 'link'        => home_url( '/invest/' ),
@@ -90,6 +94,7 @@ require_once CIN_PLUGIN_DIR . 'templates/dashboard/layout/sidebar.php';
                 'note'        => __( 'Bookmarked deal flow', 'cuba-investment-core' ),
                 'icon_svg'    => $icon_saved,
                 'color_class' => 'blue',
+                'link'        => home_url( '/investor/saved-opportunities/' ),
             ];
             include CIN_PLUGIN_DIR . 'templates/dashboard/components/stats-card.php';
             ?>
@@ -103,6 +108,7 @@ require_once CIN_PLUGIN_DIR . 'templates/dashboard/layout/sidebar.php';
                 'note'        => __( 'Direct founder enquiries', 'cuba-investment-core' ),
                 'icon_svg'    => $icon_inq,
                 'color_class' => 'amber',
+                'link'        => home_url( '/investor/enquiries/' ),
             ];
             include CIN_PLUGIN_DIR . 'templates/dashboard/components/stats-card.php';
             ?>
@@ -116,6 +122,7 @@ require_once CIN_PLUGIN_DIR . 'templates/dashboard/layout/sidebar.php';
                 'note'        => __( 'Approved introductions', 'cuba-investment-core' ),
                 'icon_svg'    => $icon_conn,
                 'color_class' => 'purple',
+                'link'        => home_url( '/investor/connections/' ),
             ];
             include CIN_PLUGIN_DIR . 'templates/dashboard/components/stats-card.php';
             ?>
@@ -144,51 +151,95 @@ require_once CIN_PLUGIN_DIR . 'templates/dashboard/layout/sidebar.php';
                     <span><?php esc_html_e( 'Quick Actions', 'cuba-investment-core' ); ?></span>
                 </h3>
 
-                <!-- Action 1: Complete My Profile -->
-                <div class="card bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-primary-50 text-primary flex items-center justify-center shrink-0 border border-primary-100">
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
+                <!-- Grid of Actions -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Action 1: Edit & Complete Profile -->
+                    <div class="card bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
                         <div>
+                            <div class="w-10 h-10 rounded-xl bg-primary-50 text-primary flex items-center justify-center shrink-0 border border-primary-100 mb-3">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
                             <h4 class="text-sm font-heading font-bold text-slate-900 mb-1">
-                                <?php esc_html_e( 'Complete My Profile', 'cuba-investment-core' ); ?>
+                                <?php esc_html_e( 'Investor Profile', 'cuba-investment-core' ); ?>
                             </h4>
-                            <p class="text-xs text-slate-500 leading-relaxed mb-4">
-                                <?php esc_html_e( 'Specify your preferred Cuban business sectors, capital ranges, collaboration types, and privacy controls.', 'cuba-investment-core' ); ?>
+                            <p class="text-xs text-slate-500 leading-relaxed">
+                                <?php esc_html_e( 'Manage investment preferences, preferred sectors, and capital parameters.', 'cuba-investment-core' ); ?>
                             </p>
                         </div>
+                        <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between">
+                            <a href="<?php echo esc_url( home_url( '/investor/profile/' ) ); ?>" class="text-xs font-bold text-primary hover:text-accent">
+                                <?php esc_html_e( 'Edit / Complete Profile &rarr;', 'cuba-investment-core' ); ?>
+                            </a>
+                        </div>
                     </div>
-                    <div class="pt-2 border-t border-slate-100 flex items-center justify-end">
-                        <a href="<?php echo esc_url( home_url( '/investor/profile/' ) ); ?>" class="btn btn-outline btn-sm font-semibold text-primary border-primary hover:bg-primary hover:text-white">
-                            <?php esc_html_e( 'Edit Profile &rarr;', 'cuba-investment-core' ); ?>
-                        </a>
-                    </div>
-                </div>
 
-                <!-- Action 2: Explore Opportunities -->
-                <div class="card bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-accent-50 text-accent flex items-center justify-center shrink-0 border border-accent-100">
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
+                    <!-- Action 2: Account Settings -->
+                    <div class="card bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
                         <div>
+                            <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200 mb-3">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
                             <h4 class="text-sm font-heading font-bold text-slate-900 mb-1">
-                                <?php esc_html_e( 'Explore Opportunities', 'cuba-investment-core' ); ?>
+                                <?php esc_html_e( 'Account Settings', 'cuba-investment-core' ); ?>
                             </h4>
-                            <p class="text-xs text-slate-500 leading-relaxed mb-4">
-                                <?php esc_html_e( 'Browse active investment listings across tourism, agriculture, clean technology, logistics, and private Cuban enterprises.', 'cuba-investment-core' ); ?>
+                            <p class="text-xs text-slate-500 leading-relaxed">
+                                <?php esc_html_e( 'Configure personal settings, display language, and email notifications.', 'cuba-investment-core' ); ?>
                             </p>
                         </div>
+                        <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between">
+                            <a href="<?php echo esc_url( home_url( '/account/' ) ); ?>" class="text-xs font-bold text-primary hover:text-accent">
+                                <?php esc_html_e( 'Manage Account &rarr;', 'cuba-investment-core' ); ?>
+                            </a>
+                        </div>
                     </div>
-                    <div class="pt-2 border-t border-slate-100 flex items-center justify-end">
-                        <a href="<?php echo esc_url( home_url( '/invest/' ) ); ?>" class="btn btn-primary btn-sm font-bold shadow-xs">
-                            <?php esc_html_e( 'Browse Listings &rarr;', 'cuba-investment-core' ); ?>
-                        </a>
+
+                    <!-- Action 3: Change Password -->
+                    <div class="card bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200 mb-3">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <h4 class="text-sm font-heading font-bold text-slate-900 mb-1">
+                                <?php esc_html_e( 'Security & Password', 'cuba-investment-core' ); ?>
+                            </h4>
+                            <p class="text-xs text-slate-500 leading-relaxed">
+                                <?php esc_html_e( 'Update your account login password and credential security settings.', 'cuba-investment-core' ); ?>
+                            </p>
+                        </div>
+                        <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between">
+                            <a href="<?php echo esc_url( home_url( '/account/#security' ) ); ?>" class="text-xs font-bold text-primary hover:text-accent">
+                                <?php esc_html_e( 'Change Password &rarr;', 'cuba-investment-core' ); ?>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Action 4: Explore Opportunities -->
+                    <div class="card bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="w-10 h-10 rounded-xl bg-accent-50 text-accent flex items-center justify-center shrink-0 border border-accent-100 mb-3">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                            <h4 class="text-sm font-heading font-bold text-slate-900 mb-1">
+                                <?php esc_html_e( 'Explore Deals', 'cuba-investment-core' ); ?>
+                            </h4>
+                            <p class="text-xs text-slate-500 leading-relaxed">
+                                <?php esc_html_e( 'Browse verified Cuban business listings and investment opportunities.', 'cuba-investment-core' ); ?>
+                            </p>
+                        </div>
+                        <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between">
+                            <a href="<?php echo esc_url( home_url( '/invest/' ) ); ?>" class="text-xs font-bold text-accent hover:text-primary">
+                                <?php esc_html_e( 'Browse Listings &rarr;', 'cuba-investment-core' ); ?>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -206,7 +257,7 @@ require_once CIN_PLUGIN_DIR . 'templates/dashboard/layout/sidebar.php';
 
         </div>
 
-        <!-- Membership & Verification Status Card -->
+        <!-- Membership & Verification Status Card (Real Data) -->
         <div class="card bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div class="flex items-center gap-3">
@@ -216,20 +267,40 @@ require_once CIN_PLUGIN_DIR . 'templates/dashboard/layout/sidebar.php';
                         </svg>
                     </div>
                     <div>
-                        <h4 class="text-sm font-bold text-slate-900">
-                            <?php esc_html_e( 'Membership: Early Access Launch Tier', 'cuba-investment-core' ); ?>
-                        </h4>
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-sm font-bold text-slate-900">
+                                <?php esc_html_e( 'Membership: Launch Early Access Tier', 'cuba-investment-core' ); ?>
+                            </h4>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700">
+                                ● <?php echo esc_html( ucfirst( $account_status ) ); ?>
+                            </span>
+                        </div>
                         <p class="text-xs text-slate-500 mt-0.5">
-                            <?php esc_html_e( '100% Free · Verified account status · No recurring fees', 'cuba-investment-core' ); ?>
+                            <?php esc_html_e( '100% Free · No payment required during launch · Full platform access', 'cuba-investment-core' ); ?>
                         </p>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        ✓ <?php esc_html_e( 'Email Verified', 'cuba-investment-core' ); ?>
-                    </span>
-                    <a href="<?php echo esc_url( home_url( '/account/' ) ); ?>" class="text-xs font-bold text-primary hover:underline ml-2">
+                <div class="flex items-center gap-3">
+                    <?php if ( $is_email_verified ) : ?>
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            ✓ <?php esc_html_e( 'Email Verified', 'cuba-investment-core' ); ?>
+                        </span>
+                    <?php else : ?>
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                            ● <?php esc_html_e( 'Pending Verification', 'cuba-investment-core' ); ?>
+                        </span>
+                        <form method="post" action="" class="inline">
+                            <input type="hidden" name="cin_action" value="cin_resend_verification">
+                            <input type="hidden" name="email" value="<?php echo esc_attr( $user->user_email ); ?>">
+                            <?php wp_nonce_field( 'cin_resend_verification', '_cin_nonce' ); ?>
+                            <button type="submit" class="text-xs font-bold text-amber-700 hover:text-amber-900 underline cursor-pointer">
+                                <?php esc_html_e( 'Resend Verification', 'cuba-investment-core' ); ?>
+                            </button>
+                        </form>
+                    <?php endif; ?>
+
+                    <a href="<?php echo esc_url( home_url( '/account/' ) ); ?>" class="text-xs font-bold text-primary hover:underline ml-1">
                         <?php esc_html_e( 'Account Details &rarr;', 'cuba-investment-core' ); ?>
                     </a>
                 </div>

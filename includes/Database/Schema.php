@@ -152,6 +152,20 @@ class Schema {
   KEY created_at (created_at)
 ) {$charset_collate};";
 
+        // 8. Saved Opportunities Table
+        $t_saved = Constants::get_table_name( Constants::TABLE_SAVED_OPPORTUNITIES );
+        $queries[] = "CREATE TABLE {$t_saved} (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  user_id bigint(20) unsigned NOT NULL,
+  opportunity_id bigint(20) unsigned NOT NULL,
+  created_at datetime NOT NULL,
+  PRIMARY KEY  (id),
+  UNIQUE KEY user_opportunity (user_id, opportunity_id),
+  KEY user_id (user_id),
+  KEY opportunity_id (opportunity_id),
+  KEY created_at (created_at)
+) {$charset_collate};";
+
         return $queries;
     }
 }
